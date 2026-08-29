@@ -34,7 +34,7 @@ export const BottleneckCard: React.FC<BottleneckCardProps> = ({
                 CRITICAL BOTTLENECK
               </span>
               <span className="text-xs text-[#76767e] font-mono">
-                POD: {bottleneck.podName}
+                POD: {bottleneck.pod_name}
               </span>
             </div>
             <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#141a32] mb-2">

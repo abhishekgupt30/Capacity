@@ -7,7 +7,7 @@ import { cn } from '../../utils/cn';
 
 interface TaskBoardProps {
   tasks: Task[];
-  onStatusChange: (taskId: string, status: TaskStatus) => void;
+  onStatusChange: (task_id: string, status: TaskStatus) => void;
   onNewTaskClick?: () => void;
 }
 
@@ -28,13 +28,13 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
   const [filterBlockerOnly, setFilterBlockerOnly] = useState(false);
 
   // Unique assignees for filter
-  const assignees = Array.from(new Set(tasks.map(t => t.assigneeName)));
+  const assignees = Array.from(new Set(tasks.map(t => t.assignee_name)));
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          task.projectKey.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesAssignee = filterAssignee === 'all' || task.assigneeName === filterAssignee;
-    const matchesBlocker = !filterBlockerOnly || task.blockerRisk;
+                          task.project_key.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesAssignee = filterAssignee === 'all' || task.assignee_name === filterAssignee;
+    const matchesBlocker = !filterBlockerOnly || task.blocker_risk;
     return matchesSearch && matchesAssignee && matchesBlocker;
   });
 
@@ -98,7 +98,7 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {COLUMNS.map(column => {
           const colTasks = filteredTasks.filter(t => t.status === column.id);
-          const colHours = colTasks.reduce((acc, t) => acc + t.estimatedHours, 0);
+          const colHours = colTasks.reduce((acc, t) => acc + t.estimated_hours, 0);
 
           return (
             <div

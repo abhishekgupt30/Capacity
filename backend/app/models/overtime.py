@@ -2,10 +2,9 @@
 
 import enum
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
-from sqlalchemy import Float, Text, DateTime, Enum, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import Float, Text, DateTime, Date, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -20,19 +19,19 @@ class OvertimeStatus(str, enum.Enum):
 class OvertimeRequest(Base):
     __tablename__ = "overtime_requests"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[str] = mapped_column(
+        String(50),
         primary_key=True,
-        default=uuid.uuid4,
+        default=lambda: f"ot_req_{uuid.uuid4().hex[:8]}",
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    user_id: Mapped[str] = mapped_column(
+        String(50),
         ForeignKey("profiles.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
-    team_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    team_id: Mapped[str] = mapped_column(
+        String(50),
         ForeignKey("teams.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -45,14 +44,26 @@ class OvertimeRequest(Base):
         Text,
         nullable=False,
     )
+    project_name: Mapped[str] = mapped_column(
+        String(150),
+        nullable=False,
+    )
+    date: Mapped[date] = mapped_column(
+        Date,
+        nullable=False,
+    )
     status: Mapped[OvertimeStatus] = mapped_column(
         Enum(OvertimeStatus, name="overtime_status", create_constraint=True),
         nullable=False,
         default=OvertimeStatus.PENDING,
     )
-    reviewed_by: Mapped[uuid.UUID | None] = mapped_column(
-        UUID(as_uuid=True),
+    reviewed_by: Mapped[str | None] = mapped_column(
+        String(50),
         ForeignKey("profiles.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    manager_notes: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(

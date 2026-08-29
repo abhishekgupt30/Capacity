@@ -16,13 +16,13 @@ export const OvertimeReviewCard: React.FC<OvertimeReviewCardProps> = ({
   onReview,
   isManager = false
 }) => {
-  const [managerNotes, setManagerNotes] = useState('');
+  const [manager_notes, setManagerNotes] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
 
   const handleAction = async (status: OvertimeStatus) => {
     setIsProcessing(true);
     try {
-      await onReview(request.id, status, managerNotes);
+      await onReview(request.id, status, manager_notes);
     } finally {
       setIsProcessing(false);
     }
@@ -40,16 +40,16 @@ export const OvertimeReviewCard: React.FC<OvertimeReviewCardProps> = ({
         <div className="flex justify-between items-start mb-4">
           <div className="flex items-center gap-3">
             <img
-              src={request.employeeAvatar}
-              alt={request.employeeName}
+              src={request.employee_avatar}
+              alt={request.employee_name}
               className="w-10 h-10 rounded-none border border-[#141a32]/20 object-cover"
             />
             <div>
               <h4 className="font-serif text-lg font-bold text-[#141a32]">
-                {request.employeeName}
+                {request.employee_name}
               </h4>
               <p className="text-xs text-[#76767e]">
-                {request.employeeTitle}
+                {request.employee_title}
               </p>
             </div>
           </div>
@@ -60,11 +60,11 @@ export const OvertimeReviewCard: React.FC<OvertimeReviewCardProps> = ({
         <div className="bg-[#fcf9f8] p-3 border border-[#141a32]/10 mb-4 flex flex-wrap justify-between items-center text-xs">
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-[#497cff]" />
-            <span className="font-bold text-[#141a32]">{request.projectName}</span>
+            <span className="font-bold text-[#141a32]">{request.project_name}</span>
           </div>
           <div className="flex items-center gap-3">
             <span className="font-bold text-[#ba1a1a] bg-[#ffdad6] px-2 py-0.5">
-              +{request.requestedHours} Hours Requested
+              +{request.requested_hours} Hours Requested
             </span>
             <span className="text-[#76767e] flex items-center gap-1">
               <Calendar className="w-3.5 h-3.5" />
@@ -84,12 +84,12 @@ export const OvertimeReviewCard: React.FC<OvertimeReviewCardProps> = ({
         </div>
 
         {/* Review Notes (if already reviewed) */}
-        {request.managerNotes && (
+        {request.manager_notes && (
           <div className="mb-4 p-3 bg-[#f0eded] border border-[#141a32]/10 text-xs">
             <div className="text-[10px] uppercase font-bold text-[#141a32] mb-1">
-              Reviewed by {request.reviewedBy} on {request.reviewedAt ? new Date(request.reviewedAt).toLocaleDateString() : 'N/A'}:
+              Reviewed by {request.reviewed_by} on {request.reviewed_at ? new Date(request.reviewed_at).toLocaleDateString() : 'N/A'}:
             </div>
-            <p className="text-[#46464d]">{request.managerNotes}</p>
+            <p className="text-[#46464d]">{request.manager_notes}</p>
           </div>
         )}
       </div>
@@ -100,7 +100,7 @@ export const OvertimeReviewCard: React.FC<OvertimeReviewCardProps> = ({
           <input
             type="text"
             placeholder="Add optional review feedback/notes..."
-            value={managerNotes}
+            value={manager_notes}
             onChange={(e) => setManagerNotes(e.target.value)}
             className="w-full text-xs p-2 border border-[#141a32]/20 focus:outline-none focus:border-[#497cff]"
           />

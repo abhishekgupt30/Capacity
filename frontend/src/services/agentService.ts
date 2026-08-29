@@ -3,22 +3,22 @@ import { DEFAULT_REBALANCE_PLAN, BOTTLENECK_ALERTS } from '../data/mockData';
 import { api } from './api';
 
 export const agentService = {
-  async getBottlenecks(teamId: string = 'team_alpha_01'): Promise<BottleneckReport[]> {
+  async getBottlenecks(team_id: string = 'team_alpha_01'): Promise<BottleneckReport[]> {
     try {
-      return await api.get<BottleneckReport[]>(`/agent/bottlenecks?team_id=${teamId}`);
+      return await api.get<BottleneckReport[]>(`/agent/bottlenecks?team_id=${team_id}`);
     } catch {
       return BOTTLENECK_ALERTS;
     }
   },
 
-  async runRebalanceSimulation(teamId: string = 'team_alpha_01'): Promise<RebalancePlan> {
+  async runRebalanceSimulation(team_id: string = 'team_alpha_01'): Promise<RebalancePlan> {
     try {
-      return await api.post<RebalancePlan>('/agent/rebalance', { team_id: teamId });
+      return await api.post<RebalancePlan>('/agent/rebalance', { team_id: team_id });
     } catch {
       return {
         ...DEFAULT_REBALANCE_PLAN,
         id: `plan_sim_${Date.now()}`,
-        generatedAt: new Date().toISOString()
+        generated_at: new Date().toISOString()
       };
     }
   },
@@ -37,19 +37,19 @@ export const agentService = {
           if (m.id === 'usr_marcus_02') {
             return {
               ...m,
-              allocatedHours: 38,
-              overtimeHours: 0,
-              efficiencyIndex: 92,
-              blockersCount: 0,
+              allocated_hours: 38,
+              overtime_hours: 0,
+              efficiency_index: 92,
+              blockers_count: 0,
               status: 'balanced'
             };
           }
           if (m.id === 'usr_elena_03') {
             return {
               ...m,
-              allocatedHours: 36,
-              efficiencyIndex: 94,
-              blockersCount: 0,
+              allocated_hours: 36,
+              efficiency_index: 94,
+              blockers_count: 0,
               status: 'balanced'
             };
           }
@@ -66,9 +66,9 @@ export const agentService = {
           if (t.id === 'task_04' || t.id === 'task_05') {
             return {
               ...t,
-              assigneeId: 'usr_elena_03',
-              assigneeName: 'Elena Rostova',
-              blockerRisk: false
+              assignee_id: 'usr_elena_03',
+              assignee_name: 'Elena Rostova',
+              blocker_risk: false
             };
           }
           return t;

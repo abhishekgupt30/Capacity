@@ -5,28 +5,30 @@ export interface Task {
   id: string;
   title: string;
   description?: string;
-  estimatedHours: number;
-  completedHours?: number;
-  deadline: string; // ISO date string
+  estimated_hours: number;
+  completed_hours?: number;
+  deadline: string;
   priority: TaskPriority;
   status: TaskStatus;
-  assigneeId: string;
-  assigneeName: string;
-  assigneeAvatar?: string;
-  teamId: string;
-  projectKey?: string; // e.g. 'CAP-104', 'ARCH-88'
+  assignee_id: string;
+  assignee_name: str | null;
+  assignee_avatar?: string;
+  team_id: string;
+  project_key?: string;
   tags: string[];
-  blockerRisk?: boolean;
-  createdAt: string;
+  blocker_risk?: boolean;
+  created_at: string;
 }
 
 export interface CreateTaskInput {
   title: string;
   description?: string;
-  estimatedHours: number;
+  estimated_hours: number;
   deadline: string;
   priority: TaskPriority;
   status?: TaskStatus;
-  assigneeId: string;
+  assignee_id: string;
+  team_id: string;
+  project_key?: string;
   tags?: string[];
 }

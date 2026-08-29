@@ -4,7 +4,7 @@ import { authService } from '../services/authService';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
-  signup: (data: { name: string; email: string; role: UserRole; teamName?: string }) => Promise<void>;
+  signup: (data: { name: string; email: string; role: UserRole; team_name?: string }) => Promise<void>;
   logout: () => void;
   switchRole: (role: UserRole) => void;
 }
@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (data: { name: string; email: string; role: UserRole; teamName?: string }) => {
+  const signup = async (data: { name: string; email: string; role: UserRole; team_name?: string }) => {
     setIsLoading(true);
     try {
       const result = await authService.signup(data);

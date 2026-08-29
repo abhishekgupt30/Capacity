@@ -5,7 +5,6 @@ import uuid
 from datetime import datetime, timezone
 
 from sqlalchemy import String, Float, DateTime, Enum, ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -19,10 +18,10 @@ class UserRole(str, enum.Enum):
 class Profile(Base):
     __tablename__ = "profiles"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[str] = mapped_column(
+        String(50),
         primary_key=True,
-        default=uuid.uuid4,
+        default=lambda: f"usr_{uuid.uuid4().hex[:8]}",
     )
     name: Mapped[str] = mapped_column(
         String(150),
@@ -34,13 +33,17 @@ class Profile(Base):
         nullable=False,
         index=True,
     )
+    hashed_password: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+    )
     role: Mapped[UserRole] = mapped_column(
         Enum(UserRole, name="user_role", create_constraint=True),
         nullable=False,
         default=UserRole.EMPLOYEE,
     )
-    team_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    team_id: Mapped[str] = mapped_column(
+        String(50),
         ForeignKey("teams.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -49,6 +52,14 @@ class Profile(Base):
         Float,
         nullable=False,
         default=40.0,
+    )
+    title: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+    avatar_url: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

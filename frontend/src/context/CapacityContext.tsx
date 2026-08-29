@@ -46,9 +46,9 @@ interface CapacityContextType {
   
   // Task Actions
   createTask: (input: CreateTaskInput) => Promise<Task>;
-  updateTaskStatus: (taskId: string, status: TaskStatus) => Promise<Task>;
-  reassignTask: (taskId: string, newAssigneeId: string, newAssigneeName: string) => Promise<Task>;
-  deleteTask: (taskId: string) => Promise<void>;
+  updateTaskStatus: (task_id: string, status: TaskStatus) => Promise<Task>;
+  reassignTask: (task_id: string, newAssigneeId: string, newAssigneeName: string) => Promise<Task>;
+  deleteTask: (task_id: string) => Promise<void>;
   
   // Overtime Actions
   submitOvertime: (input: RequestOvertimeInput) => Promise<OvertimeRequest>;
@@ -77,7 +77,7 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     try {
       const [fetchedMembers, fetchedTasks, fetchedOT, fetchedMetrics, fetchedBottlenecks] = await Promise.all([
         teamService.getTeamMembers('team_alpha_01'),
-        taskService.getTasks({ teamId: 'team_alpha_01' }),
+        taskService.getTasks({ team_id: 'team_alpha_01' }),
         overtimeService.getOvertimeRequests('team_alpha_01'),
         teamService.getTeamMetrics('team_alpha_01'),
         agentService.getBottlenecks('team_alpha_01')
@@ -98,25 +98,25 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // Recalculate metrics when members change
   useEffect(() => {
-    const totalAllocated = members.reduce((acc, m) => acc + m.allocatedHours, 0);
-    const totalCapacity = members.reduce((acc, m) => acc + m.weeklyCapacity, 0);
-    const overloaded = members.filter(m => m.allocatedHours > m.weeklyCapacity).length;
-    const totalBlockers = members.reduce((acc, m) => acc + m.blockersCount, 0);
+    const totalAllocated = members.reduce((acc, m) => acc + m.allocated_hours, 0);
+    const totalCapacity = members.reduce((acc, m) => acc + m.weekly_capacity, 0);
+    const overloaded = members.filter(m => m.allocated_hours > m.weekly_capacity).length;
+    const totalBlockers = members.reduce((acc, m) => acc + m.blockers_count, 0);
     const utilization = totalCapacity > 0 ? (totalAllocated / totalCapacity) * 100 : 78.4;
     
     // Average efficiency
     const avgEff = members.length > 0
-      ? Math.round(members.reduce((acc, m) => acc + m.efficiencyIndex, 0) / members.length)
+      ? Math.round(members.reduce((acc, m) => acc + m.efficiency_index, 0) / members.length)
       : 72;
 
     setMetrics(prev => ({
       ...prev,
-      totalAllocatedHours: totalAllocated,
-      totalCapacityHours: totalCapacity,
-      utilizationRate: Number(utilization.toFixed(1)),
-      overloadedMembersCount: overloaded,
-      blockersIdentified: totalBlockers,
-      efficiencyIndex: avgEff,
+      total_allocated_hours: totalAllocated,
+      total_capacity_hours: totalCapacity,
+      utilization_rate: Number(utilization.toFixed(1)),
+      overloaded_members_count: overloaded,
+      blockers_identified: totalBlockers,
+      efficiency_index: avgEff,
       status: overloaded > 0 ? 'overloaded' : utilization >= 85 ? 'approaching' : 'balanced'
     }));
   }, [members]);
@@ -183,19 +183,19 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (m.id === 'usr_marcus_02') {
         return {
           ...m,
-          allocatedHours: 38,
-          overtimeHours: 0,
-          efficiencyIndex: 92,
-          blockersCount: 0,
+          allocated_hours: 38,
+          overtime_hours: 0,
+          efficiency_index: 92,
+          blockers_count: 0,
           status: 'balanced'
         };
       }
       if (m.id === 'usr_elena_03') {
         return {
           ...m,
-          allocatedHours: 36,
-          efficiencyIndex: 94,
-          blockersCount: 0,
+          allocated_hours: 36,
+          efficiency_index: 94,
+          blockers_count: 0,
           status: 'balanced'
         };
       }
@@ -206,10 +206,10 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (t.id === 'task_04' || t.id === 'task_05') {
         return {
           ...t,
-          assigneeId: 'usr_elena_03',
-          assigneeName: 'Elena Rostova',
-          assigneeAvatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
-          blockerRisk: false
+          assignee_id: 'usr_elena_03',
+          assignee_name: 'Elena Rostova',
+          assignee_avatar: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&auto=format&fit=crop&q=80',
+          blocker_risk: false
         };
       }
       return t;
@@ -257,14 +257,14 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setTasks(prev => [newTask, ...prev]);
 
     // Update allocated hours for assignee
-    await teamService.updateMemberHours(input.assigneeId, Number(input.estimatedHours));
+    await teamService.updateMemberHours(input.assignee_id, Number(input.estimated_hours));
     setMembers(prev => prev.map(m => {
-      if (m.id === input.assigneeId) {
-        const newAllocated = m.allocatedHours + Number(input.estimatedHours);
+      if (m.id === input.assignee_id) {
+        const newAllocated = m.allocated_hours + Number(input.estimated_hours);
         return {
           ...m,
-          allocatedHours: newAllocated,
-          status: newAllocated > m.weeklyCapacity ? 'overloaded' : newAllocated >= 35 ? 'approaching' : 'balanced'
+          allocated_hours: newAllocated,
+          status: newAllocated > m.weekly_capacity ? 'overloaded' : newAllocated >= 35 ? 'approaching' : 'balanced'
         };
       }
       return m;
@@ -273,21 +273,21 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return newTask;
   };
 
-  const updateTaskStatus = async (taskId: string, status: TaskStatus): Promise<Task> => {
-    const updated = await taskService.updateTaskStatus(taskId, status);
-    setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+  const updateTaskStatus = async (task_id: string, status: TaskStatus): Promise<Task> => {
+    const updated = await taskService.updateTaskStatus(task_id, status);
+    setTasks(prev => prev.map(t => t.id === task_id ? updated : t));
     return updated;
   };
 
-  const reassignTask = async (taskId: string, newAssigneeId: string, newAssigneeName: string): Promise<Task> => {
-    const updated = await taskService.reassignTask(taskId, newAssigneeId, newAssigneeName);
-    setTasks(prev => prev.map(t => t.id === taskId ? updated : t));
+  const reassignTask = async (task_id: string, newAssigneeId: string, newAssigneeName: string): Promise<Task> => {
+    const updated = await taskService.reassignTask(task_id, newAssigneeId, newAssigneeName);
+    setTasks(prev => prev.map(t => t.id === task_id ? updated : t));
     return updated;
   };
 
-  const deleteTask = async (taskId: string): Promise<void> => {
-    await taskService.deleteTask(taskId);
-    setTasks(prev => prev.filter(t => t.id !== taskId));
+  const deleteTask = async (task_id: string): Promise<void> => {
+    await taskService.deleteTask(task_id);
+    setTasks(prev => prev.filter(t => t.id !== task_id));
   };
 
   // Overtime Handlers
@@ -304,10 +304,10 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // If approved, update member overtime hours
     if (status === 'approved') {
       setMembers(prev => prev.map(m => {
-        if (m.id === updated.employeeId) {
+        if (m.id === updated.employee_id) {
           return {
             ...m,
-            overtimeHours: m.overtimeHours + updated.requestedHours,
+            overtime_hours: m.overtime_hours + updated.requested_hours,
             status: 'overtime'
           };
         }

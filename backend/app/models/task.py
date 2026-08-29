@@ -4,8 +4,7 @@ import enum
 import uuid
 from datetime import date, datetime, timezone
 
-from sqlalchemy import String, Float, Date, DateTime, Enum, ForeignKey, Text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy import String, Float, Date, DateTime, Enum, ForeignKey, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -19,18 +18,19 @@ class TaskPriority(str, enum.Enum):
 
 
 class TaskStatus(str, enum.Enum):
-    PENDING = "pending"
+    TODO = "todo"
     IN_PROGRESS = "in_progress"
+    REVIEW = "review"
     COMPLETED = "completed"
 
 
 class Task(Base):
     __tablename__ = "tasks"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[str] = mapped_column(
+        String(50),
         primary_key=True,
-        default=uuid.uuid4,
+        default=lambda: f"task_{uuid.uuid4().hex[:8]}",
     )
     title: Mapped[str] = mapped_column(
         String(300),
@@ -44,6 +44,11 @@ class Task(Base):
         Float,
         nullable=False,
     )
+    completed_hours: Mapped[float] = mapped_column(
+        Float,
+        default=0.0,
+        nullable=False,
+    )
     deadline: Mapped[date] = mapped_column(
         Date,
         nullable=False,
@@ -53,16 +58,31 @@ class Task(Base):
         nullable=False,
         default=TaskPriority.MEDIUM,
     )
-    assigned_to: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    assigned_to: Mapped[str] = mapped_column(
+        String(50),
         ForeignKey("profiles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    team_id: Mapped[str] = mapped_column(
+        String(50),
+        ForeignKey("teams.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     status: Mapped[TaskStatus] = mapped_column(
         Enum(TaskStatus, name="task_status", create_constraint=True),
         nullable=False,
-        default=TaskStatus.PENDING,
+        default=TaskStatus.TODO,
+    )
+    project_key: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    tags: Mapped[list[str]] = mapped_column(
+        JSON,
+        default=list,
+        nullable=False,
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -13,7 +13,7 @@ export const EmployeeTasksPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false);
 
   // Filter tasks for this employee or all team tasks
-  const myTasks = tasks.filter(t => t.assigneeId === user?.id || t.assigneeName.includes(user?.name?.split(' ')[0] || 'Alex'));
+  const myTasks = tasks.filter(t => t.assignee_id === user?.id || t.assignee_name.includes(user?.name?.split(' ')[0] || 'Alex'));
 
   return (
     <div className="space-y-8 font-sans">

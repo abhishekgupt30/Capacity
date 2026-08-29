@@ -5,28 +5,45 @@ import { Button } from '../../components/ui/Button';
 import { UserRole } from '../../types';
 
 export const SignupPage: React.FC = () => {
-  const { signup } = useAuth();
+  const { signup, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<UserRole>('manager');
-  const [teamName, setTeamName] = useState('Alpha Engineering');
+  const [team_name, setTeamName] = useState('Alpha Engineering');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'manager') {
+        navigate('/manager', { replace: true });
+      } else {
+        navigate('/employee', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     try {
-      await signup({ name, email, role, teamName });
+      await signup({ name, email, role, team_name: team_name });
       if (role === 'manager') {
         navigate('/manager');
       } else {
         navigate('/employee');
       }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="py-16 md:py-24 px-4 flex justify-center items-center font-sans grid-bg">
@@ -39,6 +56,12 @@ export const SignupPage: React.FC = () => {
             Deploy Capacita.ai Capacity Telemetry
           </p>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded font-sans">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -76,7 +99,7 @@ export const SignupPage: React.FC = () => {
             <input
               type="text"
               required
-              value={teamName}
+              value={team_name}
               onChange={(e) => setTeamName(e.target.value)}
               placeholder="Alpha Engineering"
               className="w-full px-3 py-2 text-sm border border-[#141a32]/25 focus:outline-none focus:border-[#497cff]"

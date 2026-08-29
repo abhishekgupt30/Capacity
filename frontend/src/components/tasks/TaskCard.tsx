@@ -6,8 +6,8 @@ import { cn } from '../../utils/cn';
 
 interface TaskCardProps {
   task: Task;
-  onStatusChange?: (taskId: string, status: TaskStatus) => void;
-  onReassign?: (taskId: string) => void;
+  onStatusChange?: (task_id: string, status: TaskStatus) => void;
+  onReassign?: (task_id: string) => void;
   onClick?: (task: Task) => void;
   compact?: boolean;
 }
@@ -32,14 +32,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <div
       className={cn(
         'border border-[#141a32]/15 bg-[#ffffff] p-4 transition-all duration-150 relative group font-sans card-hover',
-        task.blockerRisk ? 'border-[#ba1a1a]/40 bg-[#ffdad6]/10' : ''
+        task.blocker_risk ? 'border-[#ba1a1a]/40 bg-[#ffdad6]/10' : ''
       )}
     >
       {/* Top row: Key + Priority + Quick menu */}
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-center gap-2">
           <span className="font-mono text-[11px] font-bold text-[#497cff]">
-            {task.projectKey}
+            {task.project_key}
           </span>
           <Badge variant="priority" priority={task.priority} size="sm" />
         </div>
@@ -93,7 +93,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       </h4>
 
       {/* Blocker Alert Warning */}
-      {task.blockerRisk && (
+      {task.blocker_risk && (
         <div className="mb-3 p-1.5 bg-[#ffdad6]/50 border border-[#ba1a1a]/30 flex items-center gap-1.5 text-[11px] text-[#ba1a1a] font-medium">
           <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
           <span>PR Throughput Delay / Blocker</span>
@@ -111,14 +111,14 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       <div className="pt-3 border-t border-[#141a32]/10 flex justify-between items-center text-xs">
         <div className="flex items-center gap-1.5 text-[#76767e] font-medium">
           <Clock className="w-3.5 h-3.5 text-[#141a32]" />
-          <span>{task.estimatedHours}h est</span>
+          <span>{task.estimated_hours}h est</span>
         </div>
 
         <div className="flex items-center gap-2">
-          {task.assigneeAvatar ? (
+          {task.assignee_avatar ? (
             <img
-              src={task.assigneeAvatar}
-              alt={task.assigneeName}
+              src={task.assignee_avatar}
+              alt={task.assignee_name}
               className="w-5 h-5 rounded-none border border-[#141a32]/20 object-cover"
             />
           ) : (
@@ -127,7 +127,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </div>
           )}
           <span className="text-[11px] font-semibold text-[#141a32]">
-            {task.assigneeName.split(' ')[0]}
+            {task.assignee_name.split(' ')[0]}
           </span>
         </div>
       </div>

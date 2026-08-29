@@ -1,5 +1,6 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { PublicLayout } from '../layouts/PublicLayout';
 import { EmployeeLayout } from '../layouts/EmployeeLayout';
 import { ManagerLayout } from '../layouts/ManagerLayout';
@@ -21,6 +22,33 @@ import { ManagerTasksPage } from '../pages/manager/ManagerTasksPage';
 import { ManagerOvertimePage } from '../pages/manager/ManagerOvertimePage';
 import { ManagerAgentPage } from '../pages/manager/ManagerAgentPage';
 
+interface ProtectedRouteProps {
+  children: React.ReactElement;
+  allowedRole?: 'manager' | 'employee';
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRole }) => {
+  const { user, isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (allowedRole && user.role !== allowedRole) {
+    return <Navigate to={user.role === 'manager' ? '/manager' : '/employee'} replace />;
+  }
+
+  return children;
+};
+
 export const AppRoutes: React.FC = () => {
   return (
     <Routes>
@@ -32,7 +60,14 @@ export const AppRoutes: React.FC = () => {
       </Route>
 
       {/* Employee Portal Routes */}
-      <Route path="/employee" element={<EmployeeLayout />}>
+      <Route
+        path="/employee"
+        element={
+          <ProtectedRoute allowedRole="employee">
+            <EmployeeLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<EmployeeDashboard />} />
         <Route path="tasks" element={<EmployeeTasksPage />} />
         <Route path="tasks/new" element={<EmployeeTasksPage />} />
@@ -40,7 +75,14 @@ export const AppRoutes: React.FC = () => {
       </Route>
 
       {/* Manager Portal Routes */}
-      <Route path="/manager" element={<ManagerLayout />}>
+      <Route
+        path="/manager"
+        element={
+          <ProtectedRoute allowedRole="manager">
+            <ManagerLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<ManagerOverviewPage />} />
         <Route path="capacity" element={<ManagerCapacityPage />} />
         <Route path="tasks" element={<ManagerTasksPage />} />
@@ -48,7 +90,7 @@ export const AppRoutes: React.FC = () => {
         <Route path="agent" element={<ManagerAgentPage />} />
       </Route>
 
-      {/* Fallback to Home */}
+      {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

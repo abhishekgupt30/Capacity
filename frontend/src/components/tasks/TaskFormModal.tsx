@@ -20,10 +20,10 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   const { members } = useTeamCapacity();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [estimatedHours, setEstimatedHours] = useState<number>(4);
+  const [estimated_hours, setEstimatedHours] = useState<number>(4);
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [status, setStatus] = useState<TaskStatus>('todo');
-  const [assigneeId, setAssigneeId] = useState(initialAssigneeId || members[0]?.id || 'usr_marcus_02');
+  const [assignee_id, setAssigneeId] = useState(initialAssigneeId || members[0]?.id || 'usr_marcus_02');
   const [deadline, setDeadline] = useState(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
   const [tagsInput, setTagsInput] = useState('Platform, Backend');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,10 +37,10 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
       await onSubmit({
         title,
         description,
-        estimatedHours,
+        estimated_hours,
         priority,
         status,
-        assigneeId,
+        assignee_id,
         deadline,
         tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean)
       });
@@ -100,7 +100,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
               min={1}
               max={40}
               required
-              value={estimatedHours}
+              value={estimated_hours}
               onChange={(e) => setEstimatedHours(Number(e.target.value))}
               className="w-full border border-[#141a32]/25 bg-white p-2 text-sm font-sans focus:outline-none focus:border-[#497cff]"
             />
@@ -129,13 +129,13 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
               Assignee
             </label>
             <select
-              value={assigneeId}
+              value={assignee_id}
               onChange={(e) => setAssigneeId(e.target.value)}
               className="w-full border border-[#141a32]/25 bg-white p-2 text-sm font-sans focus:outline-none focus:border-[#497cff]"
             >
               {members.map(m => (
                 <option key={m.id} value={m.id}>
-                  {m.name} ({m.allocatedHours}h / {m.weeklyCapacity}h)
+                  {m.name} ({m.allocated_hours}h / {m.weekly_capacity}h)
                 </option>
               ))}
             </select>

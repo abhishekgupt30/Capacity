@@ -43,12 +43,12 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
             <Sparkles className="w-5 h-5" />
           </span>
           <span className="text-xs uppercase font-bold tracking-widest text-[#bfc5e4]">
-            AI REBALANCE BLUEPRINT // CONFIDENCE {plan.confidenceScore}%
+            AI REBALANCE BLUEPRINT // CONFIDENCE {plan.shifts[0]?.confidence_score ? Math.round(plan.shifts[0].confidence_score * 100) : 95}%
           </span>
         </div>
 
         <h3 className="font-serif text-3xl md:text-4xl font-bold mb-3">
-          {plan.title}
+          {plan.team_name} Optimization Plan
         </h3>
         <p className="text-sm text-[#bfc5e4] max-w-3xl leading-relaxed">
           {plan.summary}
@@ -61,7 +61,7 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
             <span>Human-in-the-loop: Awaiting Manager Sarah Jenkins approval</span>
           </div>
           <div className="text-[11px] font-mono opacity-60">
-            Generated: {new Date(plan.generatedAt).toLocaleTimeString()}
+            Generated: {new Date(plan.generated_at).toLocaleTimeString()}
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
             Overload Elimination
           </div>
           <div className="font-serif text-3xl font-bold text-[#1b873f]">
-            {plan.impact.overloadEliminated}
+            {plan.expected_impact.overload_reduction_percent}%
           </div>
           <p className="text-[11px] text-[#76767e] mt-1">Zero team members &gt; 40h</p>
         </div>
@@ -83,7 +83,7 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
             Burnout Reduction
           </div>
           <div className="font-serif text-3xl font-bold text-[#141a32]">
-            {plan.impact.burnoutReduction}
+            {plan.expected_impact.burnout_risk_reduction_percent}%
           </div>
           <p className="text-[11px] text-[#76767e] mt-1">Cognitive strain stabilized</p>
         </div>
@@ -93,7 +93,7 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
             Velocity Multiplier
           </div>
           <div className="font-serif text-3xl font-bold text-[#497cff]">
-            {plan.impact.velocityGain}
+            {plan.expected_impact.velocity_gain_multiplier}x
           </div>
           <p className="text-[11px] text-[#76767e] mt-1">PR review bottleneck cleared</p>
         </div>
@@ -103,7 +103,7 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
             Sprint Time Saved
           </div>
           <div className="font-serif text-3xl font-bold text-[#141a32]">
-            {plan.impact.estimatedTimeSaved}
+            {plan.expected_impact.predicted_cycle_time_savings_days} Days
           </div>
           <p className="text-[11px] text-[#76767e] mt-1">Faster release cycle</p>
         </div>
@@ -116,24 +116,24 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
         </h4>
 
         <div className="space-y-6">
-          {plan.shifts.map((shift, idx) => (
+          {plan.member_comparisons.map((member, idx) => (
             <div key={idx} className="border border-[#141a32]/15 p-5 bg-[#fcf9f8]">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
                 <div>
                   <span className="font-serif text-lg font-bold text-[#141a32]">
-                    {shift.memberName}
+                    {member.member_name}
                   </span>
                   <span className="text-xs text-[#76767e] ml-2">
-                    ({shift.role})
+                    ({member.title})
                   </span>
                 </div>
                 <div className="flex items-center gap-3 text-sm font-bold">
-                  <span className={cn(shift.currentHours > 40 ? 'text-[#ba1a1a]' : 'text-[#76767e]')}>
-                    {shift.currentHours}h / 40h
+                  <span className={cn(member.before_hours > member.capacity_hours ? 'text-[#ba1a1a]' : 'text-[#76767e]')}>
+                    {member.before_hours}h / {member.capacity_hours}h
                   </span>
                   <ArrowRight className="w-4 h-4 text-[#497cff]" />
                   <span className="text-[#1b873f] bg-green-50 px-2 py-0.5 border border-green-200">
-                    {shift.proposedHours}h / 40h (Optimized)
+                    {member.proposed_hours}h / {member.capacity_hours}h (Optimized)
                   </span>
                 </div>
               </div>
@@ -142,31 +142,31 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div>
                   <div className="text-[10px] uppercase text-[#76767e] mb-1 font-semibold">
-                    Current Load: {Math.round((shift.currentHours / 40) * 100)}%
+                    Current Load: {member.before_utilization}%
                   </div>
                   <div className="h-3 w-full bg-white border border-[#141a32]/20 overflow-hidden">
                     <div
-                      className={cn('h-full', shift.currentHours > 40 ? 'bg-[#ba1a1a]' : 'bg-[#141a32]')}
-                      style={{ width: `${Math.min((shift.currentHours / 40) * 100, 100)}%` }}
+                      className={cn('h-full', member.before_hours > member.capacity_hours ? 'bg-[#ba1a1a]' : 'bg-[#141a32]')}
+                      style={{ width: `${Math.min(member.before_utilization, 100)}%` }}
                     />
                   </div>
                 </div>
 
                 <div>
                   <div className="text-[10px] uppercase text-[#76767e] mb-1 font-semibold">
-                    Proposed Load: {Math.round((shift.proposedHours / 40) * 100)}%
+                    Proposed Load: {member.proposed_utilization}%
                   </div>
                   <div className="h-3 w-full bg-white border border-[#141a32]/20 overflow-hidden">
                     <div
                       className="h-full bg-[#1b873f]"
-                      style={{ width: `${Math.min((shift.proposedHours / 40) * 100, 100)}%` }}
+                      style={{ width: `${Math.min(member.proposed_utilization, 100)}%` }}
                     />
                   </div>
                 </div>
               </div>
 
               <div className="mt-3 text-xs text-[#46464d] italic bg-white p-2.5 border border-[#141a32]/10">
-                Reasoning: {shift.reasoning}
+                Optimization Status: {member.proposed_status} (Previously: {member.before_status})
               </div>
             </div>
           ))}
@@ -176,33 +176,33 @@ export const RebalancePlanView: React.FC<RebalancePlanViewProps> = ({
       {/* Specific Task Shifts */}
       <div className="border border-[#141a32]/15 bg-[#ffffff] p-6 md:p-8">
         <h4 className="font-serif text-2xl font-bold text-[#141a32] mb-6">
-          Specific Task Reassignments (10 Hours Total Shift)
+          Specific Task Reassignments
         </h4>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {plan.tasksToReassign.map((task) => (
-            <div key={task.taskId} className="border border-[#141a32]/15 p-5 bg-[#fcf9f8] flex flex-col justify-between">
+          {plan.shifts.map((task) => (
+            <div key={task.task_id} className="border border-[#141a32]/15 p-5 bg-[#fcf9f8] flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-2">
                   <span className="font-mono text-xs font-bold text-[#497cff]">
-                    {task.projectKey}
+                    REALLOCATE
                   </span>
                   <span className="text-xs font-bold bg-[#141a32] text-white px-2 py-0.5">
-                    {task.estimatedHours}h
+                    {task.hours}h
                   </span>
                 </div>
                 <h5 className="font-serif text-lg font-bold text-[#141a32] mb-2">
-                  {task.taskTitle}
+                  {task.task_title}
                 </h5>
                 <p className="text-xs text-[#46464d] leading-relaxed mb-4">
-                  {task.rationale}
+                  {task.reason}
                 </p>
               </div>
 
               <div className="pt-3 border-t border-[#141a32]/10 flex items-center justify-between text-xs font-semibold">
-                <span className="text-[#ba1a1a]">From: {task.fromMemberName}</span>
+                <span className="text-[#ba1a1a]">From: {task.from_member_name}</span>
                 <ArrowRight className="w-4 h-4 text-[#76767e]" />
-                <span className="text-[#1b873f]">To: {task.toMemberName}</span>
+                <span className="text-[#1b873f]">To: {task.to_member_name}</span>
               </div>
             </div>
           ))}

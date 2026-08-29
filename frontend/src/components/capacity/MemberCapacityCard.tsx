@@ -19,8 +19,8 @@ export const MemberCapacityCard: React.FC<MemberCapacityCardProps> = ({
   onRebalanceClick,
   onAddTaskClick
 }) => {
-  const isOverloaded = member.allocatedHours > member.weeklyCapacity;
-  const memberTasks = tasks.filter(t => t.assigneeId === member.id);
+  const isOverloaded = member.allocated_hours > member.weekly_capacity;
+  const memberTasks = tasks.filter(t => t.assignee_id === member.id);
 
   return (
     <div className={cn(
@@ -51,8 +51,8 @@ export const MemberCapacityCard: React.FC<MemberCapacityCardProps> = ({
         {/* Capacity Meter Component */}
         <div className="mb-6">
           <CapacityMeter
-            allocatedHours={member.allocatedHours}
-            capacityHours={member.weeklyCapacity}
+            allocated_hours={member.allocated_hours}
+            capacity_hours={member.weekly_capacity}
             size="md"
             status={member.status}
           />
@@ -65,15 +65,15 @@ export const MemberCapacityCard: React.FC<MemberCapacityCardProps> = ({
               Efficiency Index
             </span>
             <span className="font-bold text-[#141a32] text-sm">
-              {member.efficiencyIndex}%
+              {member.efficiency_index}%
             </span>
           </div>
           <div>
             <span className="text-[10px] uppercase tracking-wider text-[#76767e] block">
               Blockers / PR Drag
             </span>
-            <span className={cn('font-bold text-sm', member.blockersCount > 0 ? 'text-[#ba1a1a]' : 'text-[#1b873f]')}>
-              {member.blockersCount > 0 ? `${member.blockersCount} Blockers` : 'Zero Blockers'}
+            <span className={cn('font-bold text-sm', member.blockers_count > 0 ? 'text-[#ba1a1a]' : 'text-[#1b873f]')}>
+              {member.blockers_count > 0 ? `${member.blockers_count} Blockers` : 'Zero Blockers'}
             </span>
           </div>
         </div>
@@ -99,12 +99,12 @@ export const MemberCapacityCard: React.FC<MemberCapacityCardProps> = ({
                 >
                   <div className="truncate pr-2">
                     <span className="font-mono text-[10px] font-bold text-[#497cff] mr-1.5">
-                      {task.projectKey}
+                      {task.project_key}
                     </span>
                     <span className="text-[#141a32] font-medium">{task.title}</span>
                   </div>
                   <span className="text-[11px] font-bold text-[#76767e] shrink-0">
-                    {task.estimatedHours}h
+                    {task.estimated_hours}h
                   </span>
                 </div>
               ))

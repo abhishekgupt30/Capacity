@@ -19,91 +19,76 @@ class ApiClient {
     };
   }
 
+  private async handleResponse<T>(res: Response): Promise<T> {
+    if (res.status === 401) {
+      localStorage.removeItem('capacita_auth_token');
+      localStorage.removeItem('capacita_current_user');
+      if (window.location.pathname !== '/login' && window.location.pathname !== '/') {
+        window.location.href = '/login';
+      }
+    }
+    if (!res.ok) {
+      throw new Error(`API Error: ${res.status} ${res.statusText}`);
+    }
+    return await res.json();
+  }
+
   async get<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const url = new URL(`${this.baseUrl}${endpoint}`);
     if (options.params) {
       Object.entries(options.params).forEach(([key, val]) => url.searchParams.append(key, val));
     }
 
-    try {
-      const res = await fetch(url.toString(), {
-        ...options,
-        method: 'GET',
-        headers: {
-          ...this.getHeaders(),
-          ...options.headers
-        }
-      });
-      if (!res.ok) {
-        throw new Error(`API GET Error: ${res.status} ${res.statusText}`);
+    const res = await fetch(url.toString(), {
+      ...options,
+      method: 'GET',
+      headers: {
+        ...this.getHeaders(),
+        ...options.headers
       }
-      return await res.json();
-    } catch (err) {
-      // Fallback handled gracefully in individual domain services
-      throw err;
-    }
+    });
+    return this.handleResponse<T>(res);
   }
 
   async post<T>(endpoint: string, data?: unknown, options: RequestOptions = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    try {
-      const res = await fetch(url, {
-        ...options,
-        method: 'POST',
-        headers: {
-          ...this.getHeaders(),
-          ...options.headers
-        },
-        body: data ? JSON.stringify(data) : undefined
-      });
-      if (!res.ok) {
-        throw new Error(`API POST Error: ${res.status} ${res.statusText}`);
-      }
-      return await res.json();
-    } catch (err) {
-      throw err;
-    }
+    const res = await fetch(url, {
+      ...options,
+      method: 'POST',
+      headers: {
+        ...this.getHeaders(),
+        ...options.headers
+      },
+      body: data ? JSON.stringify(data) : undefined
+    });
+    return this.handleResponse<T>(res);
   }
 
   async put<T>(endpoint: string, data?: unknown, options: RequestOptions = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    try {
-      const res = await fetch(url, {
-        ...options,
-        method: 'PUT',
-        headers: {
-          ...this.getHeaders(),
-          ...options.headers
-        },
-        body: data ? JSON.stringify(data) : undefined
-      });
-      if (!res.ok) {
-        throw new Error(`API PUT Error: ${res.status} ${res.statusText}`);
-      }
-      return await res.json();
-    } catch (err) {
-      throw err;
-    }
+    const res = await fetch(url, {
+      ...options,
+      method: 'PUT',
+      headers: {
+        ...this.getHeaders(),
+        ...options.headers
+      },
+      body: data ? JSON.stringify(data) : undefined
+    });
+    return this.handleResponse<T>(res);
   }
 
   async delete<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    try {
-      const res = await fetch(url, {
-        ...options,
-        method: 'DELETE',
-        headers: {
-          ...this.getHeaders(),
-          ...options.headers
-        }
-      });
-      if (!res.ok) {
-        throw new Error(`API DELETE Error: ${res.status} ${res.statusText}`);
+    const res = await fetch(url, {
+      ...options,
+      method: 'DELETE',
+      headers: {
+        ...this.getHeaders(),
+        ...options.headers
       }
-      return await res.json();
-    } catch (err) {
-      throw err;
-    }
+    });
+    return this.handleResponse<T>(res);
   }
 }
 

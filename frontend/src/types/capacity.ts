@@ -12,30 +12,30 @@ export interface MemberCapacity {
   role: 'employee' | 'manager';
   title: string;
   avatar: string;
-  weeklyCapacity: number; // e.g. 40
-  allocatedHours: number; // e.g. 48
-  completedHours: number; // e.g. 18
-  overtimeHours: number;  // e.g. 8
-  efficiencyIndex: number; // e.g. 72%
-  blockersCount: number;
+  weekly_capacity: number;
+  allocated_hours: number;
+  completed_hours: number;
+  overtime_hours: number;
+  efficiency_index: number;
+  blockers_count: number;
   status: CapacityStatus;
   skills: string[];
-  activeTaskCount: number;
+  active_task_count: number;
 }
 
 export interface TeamMetrics {
-  teamId: string;
-  teamName: string;
+  team_id: string;
+  team_name: string;
   department: string;
-  activeResources: number;
-  efficiencyIndex: number;
-  totalCapacityHours: number;
-  totalAllocatedHours: number;
-  utilizationRate: number; // percentage e.g. 78.4
-  blockersIdentified: number;
-  avgCycleTimeDays: number;
-  criticalDependencies: number;
-  overloadedMembersCount: number;
+  active_resources: number;
+  efficiency_index: number;
+  total_capacity_hours: number;
+  total_allocated_hours: number;
+  utilization_rate: number;
+  blockers_identified: number;
+  avg_cycle_time_days: number;
+  critical_dependencies: number;
+  overloaded_members_count: number;
   status: CapacityStatus;
 }
 

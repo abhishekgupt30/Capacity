@@ -5,8 +5,8 @@ import { getCapacityStatus, getCapacityStatusTheme } from '../../utils/capacity'
 import { formatHours } from '../../utils/formatting';
 
 export interface CapacityMeterProps {
-  allocatedHours: number;
-  capacityHours?: number;
+  allocated_hours: number;
+  capacity_hours?: number;
   label?: string;
   sublabel?: string;
   showDetails?: boolean;
@@ -18,8 +18,8 @@ export interface CapacityMeterProps {
 }
 
 export const CapacityMeter: React.FC<CapacityMeterProps> = ({
-  allocatedHours,
-  capacityHours = 40,
+  allocated_hours,
+  capacity_hours = 40,
   label,
   sublabel,
   showDetails = true,
@@ -29,11 +29,11 @@ export const CapacityMeter: React.FC<CapacityMeterProps> = ({
   variant = 'architectural',
   className
 }) => {
-  const calculatedStatus = explicitStatus || getCapacityStatus(allocatedHours, capacityHours);
+  const calculatedStatus = explicitStatus || getCapacityStatus(allocated_hours, capacity_hours);
   const theme = getCapacityStatusTheme(calculatedStatus);
-  const percentage = capacityHours > 0 ? (allocatedHours / capacityHours) * 100 : 0;
+  const percentage = capacity_hours > 0 ? (allocated_hours / capacity_hours) * 100 : 0;
   const clampedPercentage = Math.min(percentage, 100);
-  const isOverloaded = allocatedHours > capacityHours;
+  const isOverloaded = allocated_hours > capacity_hours;
 
   const heightClasses = {
     sm: 'h-2',
@@ -59,7 +59,7 @@ export const CapacityMeter: React.FC<CapacityMeterProps> = ({
           </div>
           <div className="text-right">
             <span className={cn('font-sans font-bold text-sm tracking-tight', isOverloaded ? 'text-[#ba1a1a]' : 'text-[#141a32]')}>
-              {formatHours(allocatedHours)} / {formatHours(capacityHours)}
+              {formatHours(allocated_hours)} / {formatHours(capacity_hours)}
             </span>
             <span className="text-[11px] text-[#76767e] ml-1 font-sans">
               ({Math.round(percentage)}%)
@@ -104,7 +104,7 @@ export const CapacityMeter: React.FC<CapacityMeterProps> = ({
         <div className="flex justify-between mt-1 font-sans text-[11px] text-[#76767e] uppercase tracking-wider">
           <span>Base Load (0h)</span>
           <span>Target Band (28-34h)</span>
-          <span>Peak Threshold ({capacityHours}h)</span>
+          <span>Peak Threshold ({capacity_hours}h)</span>
         </div>
       )}
     </div>

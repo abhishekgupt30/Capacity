@@ -5,11 +5,11 @@ export interface Team {
   name: string;
   department: string;
   description: string;
-  leadName: string;
-  leadId: string;
-  membersCount: number;
+  lead_name: string;
+  lead_id: string;
+  members_count: number;
   members: MemberCapacity[];
-  primaryFocus: string;
-  efficiencyIndex: number;
-  blockersCount: number;
+  primary_focus: string;
+  efficiency_index: number;
+  blockers_count: number;
 }

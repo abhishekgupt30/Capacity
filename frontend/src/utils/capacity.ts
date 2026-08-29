@@ -1,9 +1,9 @@
 import { CapacityStatus } from '../types';
 import { APP_CONFIG } from './constants';
 
-export function getCapacityStatus(allocatedHours: number, capacityHours: number = 40): CapacityStatus {
-  if (capacityHours <= 0) return 'balanced';
-  const ratio = allocatedHours / capacityHours;
+export function getCapacityStatus(allocated_hours: number, capacity_hours: number = 40): CapacityStatus {
+  if (capacity_hours <= 0) return 'balanced';
+  const ratio = allocated_hours / capacity_hours;
   
   if (ratio > 1.0) {
     return 'overloaded';

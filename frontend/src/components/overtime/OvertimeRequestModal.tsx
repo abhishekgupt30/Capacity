@@ -16,9 +16,9 @@ export const OvertimeRequestModal: React.FC<OvertimeRequestModalProps> = ({
   onSubmit
 }) => {
   const { user } = useAuth();
-  const [requestedHours, setRequestedHours] = useState<number>(6);
+  const [requested_hours, setRequestedHours] = useState<number>(6);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [projectName, setProjectName] = useState('Core Telemetry Pipeline v3.1');
+  const [project_name, setProjectName] = useState('Core Telemetry Pipeline v3.1');
   const [reason, setReason] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -29,10 +29,10 @@ export const OvertimeRequestModal: React.FC<OvertimeRequestModalProps> = ({
     setIsSubmitting(true);
     try {
       await onSubmit({
-        employeeId: user.id,
-        requestedHours,
+        employee_id: user.id,
+        requested_hours,
         date,
-        projectName,
+        project_name,
         reason
       });
       setReason('');
@@ -53,7 +53,7 @@ export const OvertimeRequestModal: React.FC<OvertimeRequestModalProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4 font-sans text-xs">
         <div className="p-3 bg-[#dce1ff]/30 border border-[#141a32]/10 text-xs text-[#141a32]">
           <div className="font-bold">Applicant: {user?.name || 'Alex Rivera'}</div>
-          <div className="text-[#46464d]">Current Weekly Bandwidth: {user?.currentHours || 38}h / 40h standard</div>
+          <div className="text-[#46464d]">Current Weekly Bandwidth: {user?.current_hours || 38}h / 40h standard</div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -66,7 +66,7 @@ export const OvertimeRequestModal: React.FC<OvertimeRequestModalProps> = ({
               min={1}
               max={20}
               required
-              value={requestedHours}
+              value={requested_hours}
               onChange={(e) => setRequestedHours(Number(e.target.value))}
               className="w-full border border-[#141a32]/25 bg-white p-2.5 text-sm font-sans focus:outline-none focus:border-[#497cff]"
             />
@@ -93,7 +93,7 @@ export const OvertimeRequestModal: React.FC<OvertimeRequestModalProps> = ({
           <input
             type="text"
             required
-            value={projectName}
+            value={project_name}
             onChange={(e) => setProjectName(e.target.value)}
             placeholder="e.g. Distributed Database Clustering"
             className="w-full border border-[#141a32]/25 bg-white p-2.5 text-sm font-sans focus:outline-none focus:border-[#497cff]"

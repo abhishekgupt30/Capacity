@@ -29,7 +29,7 @@ export const EmployeeDashboard: React.FC = () => {
 
   // Current employee data
   const currentMember = members.find(m => m.id === user?.id) || members[1]; // default Alex Rivera
-  const myTasks = tasks.filter(t => t.assigneeId === currentMember.id || t.assigneeName.includes('Alex'));
+  const myTasks = tasks.filter(t => t.assignee_id === currentMember.id || t.assignee_name.includes('Alex'));
   const pendingReviewCount = myTasks.filter(t => t.status === 'review').length;
 
   return (
@@ -81,15 +81,15 @@ export const EmployeeDashboard: React.FC = () => {
               Optimal Allocation Band
             </span>
             <p className="text-xs text-[#76767e] mt-1.5">
-              Personal Load: {currentMember.allocatedHours}h / {currentMember.weeklyCapacity}h
+              Personal Load: {currentMember.allocated_hours}h / {currentMember.weekly_capacity}h
             </p>
           </div>
         </div>
 
         {/* Large Architectural Capacity Meter */}
         <CapacityMeter
-          allocatedHours={currentMember.allocatedHours}
-          capacityHours={currentMember.weeklyCapacity}
+          allocated_hours={currentMember.allocated_hours}
+          capacity_hours={currentMember.weekly_capacity}
           showDetails={false}
           size="lg"
         />
@@ -97,7 +97,7 @@ export const EmployeeDashboard: React.FC = () => {
         <div className="flex justify-between items-center mt-3 text-xs text-[#76767e] uppercase tracking-wider">
           <span>Base Load (0h)</span>
           <span>Target Equilibrium (28-34h)</span>
-          <span>Peak Optimization Threshold ({currentMember.weeklyCapacity}h)</span>
+          <span>Peak Optimization Threshold ({currentMember.weekly_capacity}h)</span>
         </div>
       </section>
 
@@ -112,14 +112,14 @@ export const EmployeeDashboard: React.FC = () => {
 
         <MetricCard
           label="Overtime Delta"
-          value={`+${currentMember.overtimeHours || 4.2}h`}
+          value={`+${currentMember.overtime_hours || 4.2}h`}
           subtext="Within Safe Operational Bounds"
           icon={<Clock className="w-6 h-6 text-[#497cff]" />}
         />
 
         <MetricCard
           label="Efficiency Index"
-          value={`${currentMember.efficiencyIndex}%`}
+          value={`${currentMember.efficiency_index}%`}
           subtext="Top Quartile Delivery Velocity"
           icon={<TrendingUp className="w-6 h-6 text-[#1b873f]" />}
         />

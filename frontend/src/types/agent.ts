@@ -8,44 +8,44 @@ export type AgentStatus =
   | 'error';
 
 export interface TaskShift {
-  taskId: string;
-  taskTitle: string;
+  task_id: string;
+  task_title: string;
   hours: number;
-  fromMemberId: string;
-  fromMemberName: string;
-  toMemberId: string;
-  toMemberName: string;
+  from_member_id: string;
+  from_member_name: string;
+  to_member_id: string;
+  to_member_name: string;
   reason: string;
-  confidenceScore: number; // e.g. 0.94
+  confidence_score: number;
 }
 
 export interface MemberLoadComparison {
-  memberId: string;
-  memberName: string;
+  member_id: string;
+  member_name: string;
   title: string;
-  beforeHours: number;
-  proposedHours: number;
-  capacityHours: number;
-  beforeStatus: string;
-  proposedStatus: string;
-  beforeUtilization: number;
-  proposedUtilization: number;
+  before_hours: number;
+  proposed_hours: number;
+  capacity_hours: number;
+  before_status: string;
+  proposed_status: string;
+  before_utilization: number;
+  proposed_utilization: number;
 }
 
 export interface RebalancePlan {
   id: string;
-  teamId: string;
-  teamName: string;
-  generatedAt: string;
+  team_id: string;
+  team_name: string;
+  generated_at: string;
   summary: string;
   shifts: TaskShift[];
-  memberComparisons: MemberLoadComparison[];
-  expectedImpact: {
-    overloadReductionPercent: number; // e.g. 34
-    burnoutRiskReductionPercent: number; // e.g. 85
-    velocityGainMultiplier: number; // e.g. 1.25
-    predictedCycleTimeSavingsDays: number; // e.g. 1.8
-    balancedRatio: string; // e.g. "100% within optimal band"
+  member_comparisons: MemberLoadComparison[];
+  expected_impact: {
+    overload_reduction_percent: number;
+    burnout_risk_reduction_percent: number;
+    velocity_gain_multiplier: number;
+    predicted_cycle_time_savings_days: number;
+    balanced_ratio: string;
   };
   status: 'pending_approval' | 'approved' | 'rejected';
 }
@@ -63,8 +63,8 @@ export interface BottleneckReport {
   id: string;
   title: string;
   description: string;
-  podName: string;
+  pod_name: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
-  metricImpact: string;
-  suggestedAction: string;
+  metric_impact: string;
+  suggested_action: string;
 }

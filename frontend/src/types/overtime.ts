@@ -2,29 +2,29 @@ export type OvertimeStatus = 'pending' | 'approved' | 'rejected';
 
 export interface OvertimeRequest {
   id: string;
-  employeeId: string;
-  employeeName: string;
-  employeeTitle: string;
-  employeeAvatar?: string;
-  teamId: string;
-  teamName: string;
-  requestedHours: number;
-  currentCapacityHours: number; // e.g. 40
-  currentAllocatedHours: number; // e.g. 44
+  employee_id: string;
+  employee_name: string;
+  employee_title: string;
+  employee_avatar?: string;
+  team_id: string;
+  team_name: string;
+  requested_hours: number;
+  current_capacity_hours: number;
+  current_allocated_hours: number;
   reason: string;
-  projectName: string;
+  project_name: string;
   date: string;
   status: OvertimeStatus;
-  reviewedBy?: string;
-  reviewedAt?: string;
-  managerNotes?: string;
-  createdAt: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  manager_notes?: string;
+  created_at: string;
 }
 
 export interface RequestOvertimeInput {
-  employeeId: string;
-  requestedHours: number;
+  employee_id: string;
+  requested_hours: number;
   reason: string;
-  projectName: string;
+  project_name: string;
   date: string;
 }

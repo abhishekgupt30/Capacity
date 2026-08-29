@@ -1,13 +1,13 @@
 """Pydantic v2 schemas."""
 
 from app.schemas.team import TeamBase, TeamCreate, TeamRead
-from app.schemas.profile import ProfileBase, ProfileCreate, ProfileRead
+from app.schemas.profile import ProfileBase, ProfileCreate, ProfileRead, MemberCapacityRead
 from app.schemas.task import TaskBase, TaskCreate, TaskRead, TaskUpdate
 from app.schemas.overtime import (
     OvertimeRequestBase,
     OvertimeRequestCreate,
     OvertimeRequestRead,
-    OvertimeRequestUpdate,
+    OvertimeRequestReview,
 )
 
 __all__ = [
@@ -17,6 +17,7 @@ __all__ = [
     "ProfileBase",
     "ProfileCreate",
     "ProfileRead",
+    "MemberCapacityRead",
     "TaskBase",
     "TaskCreate",
     "TaskRead",
@@ -24,5 +25,5 @@ __all__ = [
     "OvertimeRequestBase",
     "OvertimeRequestCreate",
     "OvertimeRequestRead",
-    "OvertimeRequestUpdate",
+    "OvertimeRequestReview",
 ]

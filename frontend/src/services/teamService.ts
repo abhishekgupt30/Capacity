@@ -11,9 +11,9 @@ export const teamService = {
     }
   },
 
-  async getTeamMembers(teamId: string = 'team_alpha_01'): Promise<MemberCapacity[]> {
+  async getTeamMembers(team_id: string = 'team_alpha_01'): Promise<MemberCapacity[]> {
     try {
-      return await api.get<MemberCapacity[]>(`/teams/${teamId}/members`);
+      return await api.get<MemberCapacity[]>(`/teams/${team_id}/members`);
     } catch {
       const saved = localStorage.getItem('capacita_team_members');
       if (saved) {
@@ -27,23 +27,23 @@ export const teamService = {
     }
   },
 
-  async getTeamMetrics(teamId: string = 'team_alpha_01'): Promise<TeamMetrics> {
+  async getTeamMetrics(team_id: string = 'team_alpha_01'): Promise<TeamMetrics> {
     try {
-      return await api.get<TeamMetrics>(`/teams/${teamId}/metrics`);
+      return await api.get<TeamMetrics>(`/teams/${team_id}/metrics`);
     } catch {
       return INITIAL_TEAM_METRICS;
     }
   },
 
-  async updateMemberHours(memberId: string, deltaHours: number): Promise<MemberCapacity[]> {
+  async updateMemberHours(member_id: string, deltaHours: number): Promise<MemberCapacity[]> {
     const members = await this.getTeamMembers();
     const updated = members.map(m => {
       if (m.id === memberId) {
-        const newAllocated = Math.max(0, m.allocatedHours + deltaHours);
+        const newAllocated = Math.max(0, m.allocated_hours + deltaHours);
         return {
           ...m,
-          allocatedHours: newAllocated,
-          status: newAllocated > m.weeklyCapacity ? 'overloaded' : newAllocated >= 35 ? 'approaching' : newAllocated >= 28 ? 'balanced' : 'underutilized'
+          allocated_hours: newAllocated,
+          status: newAllocated > m.weekly_capacity ? 'overloaded' : newAllocated >= 35 ? 'approaching' : newAllocated >= 28 ? 'balanced' : 'underutilized'
         };
       }
       return m;

@@ -5,12 +5,12 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
-  teamId: string;
-  teamName: string;
+  team_id: string;
+  team_name: string;
   title: string;
-  avatarUrl?: string;
-  weeklyCapacity: number; // typically 40h
-  currentHours: number;
+  avatar_url?: string;
+  weekly_capacity: number;
+  current_hours: number;
 }
 
 export interface AuthState {

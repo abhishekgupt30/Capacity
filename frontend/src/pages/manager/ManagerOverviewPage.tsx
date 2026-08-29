@@ -100,30 +100,30 @@ export const ManagerOverviewPage: React.FC = () => {
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <MetricCard
           label="Total Resource Pool"
-          value={`${metrics.totalCapacityHours}h`}
+          value={`${metrics.total_capacity_hours}h`}
           subtext="4 Active Staff Engineers"
           icon={<Users className="w-6 h-6 text-[#141a32]" />}
         />
 
         <MetricCard
           label="Active Workload"
-          value={`${metrics.totalAllocatedHours}h`}
-          subtext={`${metrics.utilizationRate}% Capacity Utilization`}
+          value={`${metrics.total_allocated_hours}h`}
+          subtext={`${metrics.utilization_rate}% Capacity Utilization`}
           icon={<Clock className="w-6 h-6 text-[#497cff]" />}
         />
 
         <MetricCard
           label="Overloaded Nodes"
-          value={metrics.overloadedMembersCount > 0 ? `${metrics.overloadedMembersCount} Node` : '0 Nodes'}
-          subtext={metrics.overloadedMembersCount > 0 ? 'Marcus Vance (120% Load)' : 'Optimal Balancing'}
-          variant={metrics.overloadedMembersCount > 0 ? 'alert' : 'default'}
+          value={metrics.overloaded_members_count > 0 ? `${metrics.overloaded_members_count} Node` : '0 Nodes'}
+          subtext={metrics.overloaded_members_count > 0 ? 'Marcus Vance (120% Load)' : 'Optimal Balancing'}
+          variant={metrics.overloaded_members_count > 0 ? 'alert' : 'default'}
           icon={<AlertTriangle className="w-6 h-6" />}
         />
 
         <MetricCard
           label="Team Efficiency Index"
-          value={`${metrics.efficiencyIndex}%`}
-          subtext={metrics.efficiencyIndex >= 85 ? 'High Velocity Delivery' : 'Degraded by PR Drag'}
+          value={`${metrics.efficiency_index}%`}
+          subtext={metrics.efficiency_index >= 85 ? 'High Velocity Delivery' : 'Degraded by PR Drag'}
           icon={<TrendingUp className="w-6 h-6 text-[#1b873f]" />}
         />
       </section>
@@ -148,7 +148,7 @@ export const ManagerOverviewPage: React.FC = () => {
           {/* Alpha Pod (Active Demo Pod) */}
           <div className={cn(
             'border p-6 bg-white shadow-sm flex flex-col justify-between card-hover',
-            metrics.overloadedMembersCount > 0 ? 'border-[#ba1a1a]/40 ring-1 ring-[#ba1a1a]/20' : 'border-[#141a32]/15'
+            metrics.overloaded_members_count > 0 ? 'border-[#ba1a1a]/40 ring-1 ring-[#ba1a1a]/20' : 'border-[#141a32]/15'
           )}>
             <div>
               <div className="flex justify-between items-start mb-4">
@@ -160,33 +160,33 @@ export const ManagerOverviewPage: React.FC = () => {
                 </div>
                 <span className={cn(
                   'text-[10px] uppercase font-bold px-2 py-0.5 border',
-                  metrics.overloadedMembersCount > 0 ? 'bg-[#ffdad6] text-[#ba1a1a] border-[#ba1a1a]/30' : 'bg-green-50 text-green-800 border-green-200'
+                  metrics.overloaded_members_count > 0 ? 'bg-[#ffdad6] text-[#ba1a1a] border-[#ba1a1a]/30' : 'bg-green-50 text-green-800 border-green-200'
                 )}>
-                  {metrics.overloadedMembersCount > 0 ? 'Bottleneck' : 'Optimal'}
+                  {metrics.overloaded_members_count > 0 ? 'Bottleneck' : 'Optimal'}
                 </span>
               </div>
 
               <div className="space-y-3 my-4">
                 <div className="flex justify-between text-xs">
                   <span className="text-[#76767e]">Efficiency Index</span>
-                  <span className="font-bold text-[#141a32]">{metrics.efficiencyIndex}%</span>
+                  <span className="font-bold text-[#141a32]">{metrics.efficiency_index}%</span>
                 </div>
                 <div className="h-2 w-full bg-[#f0eded] overflow-hidden">
                   <div 
-                    className={cn('h-full', metrics.overloadedMembersCount > 0 ? 'bg-[#ba1a1a]' : 'bg-[#497cff]')}
-                    style={{ width: `${metrics.utilizationRate}%` }}
+                    className={cn('h-full', metrics.overloaded_members_count > 0 ? 'bg-[#ba1a1a]' : 'bg-[#497cff]')}
+                    style={{ width: `${metrics.utilization_rate}%` }}
                   />
                 </div>
                 <div className="flex justify-between text-xs text-[#76767e]">
                   <span>4 Engineers</span>
-                  <span>{metrics.totalAllocatedHours}h / {metrics.totalCapacityHours}h</span>
+                  <span>{metrics.total_allocated_hours}h / {metrics.total_capacity_hours}h</span>
                 </div>
               </div>
             </div>
 
             <div className="pt-4 border-t border-[#141a32]/10 flex justify-between items-center text-xs">
-              <span className={metrics.blockersIdentified > 0 ? 'text-[#ba1a1a] font-bold' : 'text-green-700'}>
-                {metrics.blockersIdentified > 0 ? `${metrics.blockersIdentified} Blockers Detected` : 'Zero Blockers'}
+              <span className={metrics.blockers_identified > 0 ? 'text-[#ba1a1a] font-bold' : 'text-green-700'}>
+                {metrics.blockers_identified > 0 ? `${metrics.blockers_identified} Blockers Detected` : 'Zero Blockers'}
               </span>
               <button 
                 onClick={() => navigate('/manager/agent')}

@@ -5,16 +5,29 @@ import { Button } from '../../components/ui/Button';
 import { Lock, Mail, Sparkles, UserCheck, ShieldCheck } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
+  const { login, isAuthenticated, user } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('sarah.jenkins@capacita.ai');
   const [password, setPassword] = useState('password123');
   const [role, setRole] = useState<'manager' | 'employee'>('manager');
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.role === 'manager') {
+        navigate('/manager', { replace: true });
+      } else {
+        navigate('/employee', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     try {
       await login({ email, password, role });
       if (role === 'manager') {
@@ -22,6 +35,9 @@ export const LoginPage: React.FC = () => {
       } else {
         navigate('/employee');
       }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Authentication failed. Please verify your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -29,6 +45,7 @@ export const LoginPage: React.FC = () => {
 
   const handleQuickDemoLogin = async (selectedRole: 'manager' | 'employee') => {
     setIsLoading(true);
+    setError(null);
     try {
       const demoEmail = selectedRole === 'manager' ? 'sarah.jenkins@capacita.ai' : 'alex.rivera@capacita.ai';
       await login({ email: demoEmail, password: 'password123', role: selectedRole });
@@ -37,10 +54,14 @@ export const LoginPage: React.FC = () => {
       } else {
         navigate('/employee');
       }
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || 'Demo authentication failed.');
     } finally {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="py-16 md:py-24 px-4 flex justify-center items-center font-sans grid-bg">
@@ -88,6 +109,12 @@ export const LoginPage: React.FC = () => {
             Or Standard Credentials
           </span>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold rounded font-sans">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
