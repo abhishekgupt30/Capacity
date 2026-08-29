@@ -1,0 +1,26 @@
+# Core
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+
+# Database
+sqlalchemy[asyncio]
+asyncpg
+greenlet
+
+# Auth & Security
+python-jose[cryptography]
+passlib[bcrypt]
+bcrypt
+
+# AI & Agent (Module 3)
+langchain
+langchain-google-genai
+langchain-core
+langgraph
+
+# HTTP & Utilities
+python-dotenv
+httpx
+slowapi

@@ -1,0 +1,107 @@
+# Product Requirement Document (PRD) — Capacita.ai
+
+**Project Name:** Capacita.ai (Autonomous Workload & Burnout Agent with Overtime Tracking)
+
+**Hackathon Target:** 48-Hour Build (React + Vite + Python FastAPI + LangChain + Local/Cloud PostgreSQL + Gemini Flash + Docker Compose)
+
+**Document Status:** Final / Approved for Team Execution
+
+---
+
+## 1. Executive Summary
+
+Team managers lack real-time visibility into workload distribution, frequently discovering employee burnout or project delivery bottlenecks *after* deadlines are missed. **Capacita.ai** is an agentic, 100% open-source workload optimization system designed to resolve both **structural data silos** and **human resource imbalances**. It features strict **team-scoped Role-Based Access Control (RBAC)**, an integrated **Overtime Tracking section**, and is powered by a **Python FastAPI backend running a LangChain autonomous AI agent** (orchestrated via Gemini Flash) that analyzes operational capacity, reasons through team bottlenecks, and presents structured rebalancing plans for manager-gated execution against a PostgreSQL database.
+
+---
+
+## 2. Problem Statement & Objectives
+
+* **The Problem:**
+* *The Operational Imbalance:* Team leads lack granular visibility into true employee bandwidth. Workloads skew unevenly because tasks are assigned ad-hoc, causing top performers to quietly drown in burnout while others sit underutilized, ultimately leading to missed project deadlines.
+* *The Technological & Infrastructural Friction:* Standard enterprise solutions are rigid, opaque, and cloud-dependent, exposing sensitive internal HR data or breaking down during spotty network conditions or rigid local security policies.
+
+
+* **The Objective:** Build a dockerized, agentic web application using free and open-source software (FOSS)—leveraging **Python FastAPI, LangChain, and Gemini Flash**—that simultaneously eliminates infrastructure limitations and automates team-scoped workload tracking, overtime management, and manager-gated bottleneck resolution.
+
+---
+
+## 3. Target Users & User Roles
+
+* **Employee:** Views personal tasks, logs new assignments, tracks deadlines, and submits **Overtime Requests** when exceeding standard weekly capacity. Bound strictly to their individual profile and team assignment.
+* **Team Manager:** Views the high-level operational dashboard **exclusively for their assigned team**, monitors team capacity meters (factoring in approved overtime), reviews overtime requests, and holds exclusive authority to approve/reject overtime and deploy the **LangChain Agent** via FastAPI for team-scoped task rebalancing.
+
+---
+
+## 4. User Journeys & Core Workflows
+
+1. **Task Logging & Overtime Request (Employee Journey):**
+* Employee logs into their portal view.
+* Submits tasks (Title, Estimated Hours, Deadline, Priority).
+* If total task hours exceed standard weekly capacity (e.g., 40 hours), the system prompts the employee to log an **Overtime Request** (extra hours and reason). Data writes directly to the PostgreSQL database via FastAPI endpoints.
+
+
+2. **Team-Scoped Overtime Review & Python/LangChain Agent Resolution (Manager Journey):**
+* Manager opens the Dashboard, which displays team capacity meters factoring in baseline capacity + approved overtime.
+* Manager reviews pending **Overtime Requests** in the dedicated section and approves or denies them.
+* If an employee remains overloaded (🔴 Red) or faces delivery risks, an **Autonomous Agent Alert** triggers.
+* Manager clicks **"Let Agent Resolve"**. The frontend calls the FastAPI backend endpoint `/api/agent/rebalance`, passing the manager's `team_id`.
+* The Python LangChain agent executes its tool-calling loop (fetching team workloads via custom tools, simulating shifts), generates a structured remediation plan, and returns it to the frontend for **manager-gated execution**.
+
+
+
+---
+
+## 5. Functional Requirements
+
+### Frontend (React + Vite + JavaScript)
+
+* **Team-Scoped RBAC:** Route and view filtering ensuring managers can fetch, view, and modify data *only* for users belonging to their designated team ID.
+* **Employee Portal:**
+* Task input form and active personal task management list.
+* **Overtime Section:** Interface to view current overtime status and submit extra hour requests.
+
+
+* **Manager Dashboard (Team-Isolated):**
+* Visual capacity progress bars factoring in baseline capacity + approved overtime.
+* **Overtime Management Widget:** Dedicated list to approve or reject pending employee overtime requests.
+* Real-time status indicators (Balanced, Overloaded, Underutilized, In Overtime) scoped to the team.
+
+
+* **Agent Control Center (Manager Only):** Modal/Drawer displaying the Python agent's reasoning steps, proposed reallocations, and the mandatory **Manager Approval Button**.
+
+### Backend & AI Orchestration (Python + FastAPI + LangChain + Gemini Flash + PostgreSQL)
+
+* **Database Schema (PostgreSQL):**
+* `teams`: Team metadata (`id`, `name`)
+* `profiles`: User metadata (`id`, `name`, `role` [employee/manager], `team_id`, `weekly_capacity` [default 40]).
+* `tasks`: Task data (`id`, `title`, `estimated_hours`, `deadline`, `assigned_to`, `status`, `created_at`).
+* `overtime_requests`: Overtime tracking metadata (`id`, `user_id`, `team_id`, `extra_hours`, `reason`, `status` [pending/approved/rejected], `created_at`).
+
+
+* **Python LangChain Agent Architecture:**
+* **LLM Integration:** Connected via LangChain using Gemini Flash for high-speed, structured tool execution and agentic reasoning.
+* **LangChain Tools (Team-Filtered):**
+1. `get_team_workloads(team_id: str)`: Custom LangChain Tool querying PostgreSQL for active tasks, overtime status, and total adjusted hours restricted to the specified `team_id`.
+2. `simulate_task_shift(task_id: str, target_user_id: str)`: Custom LangChain Tool that evaluates post-shift capacity metrics within team boundaries.
+
+
+* **Execution Safety:** The agent outputs a structured JSON plan. FastAPI database mutation endpoints execute updates only upon explicit manager confirmation.
+
+
+* **Containerization:** Fully orchestrated via Docker Compose (`postgres` container + `backend` FastAPI container + frontend SPA).
+
+---
+
+## 6. Non-Functional Requirements
+
+* **100% FOSS & Cloud-Deployable:** Utilizes open-source frameworks (React, Vite, FastAPI, LangChain, PostgreSQL) and lightweight cloud-ready LLM bindings.
+* **Containerization:** Multi-stage Docker builds and Docker Compose orchestration ensuring identical execution on development machines and judge hardware.
+* **Demo Reliability:** Architecture guarantees stable execution and smooth presentation flow.
+
+---
+
+## 7. Out of Scope (Hackathon MVP Constraints)
+
+* Payroll or financial compensation calculations for overtime hours.
+* Cross-team task reassignments (Python agent constraints prevent moving work between different teams).
+* External calendar integrations (Google Calendar / Outlook sync) — mocked via static date inputs instead.

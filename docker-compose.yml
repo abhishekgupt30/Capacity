@@ -1,0 +1,41 @@
+services:
+  db:
+    image: postgres:16
+    container_name: capacita-db
+    restart: unless-stopped
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-capacita}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-capacita_dev_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-capacita_db}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./backend/scripts/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U capacita -d capacita_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: capacita-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://capacita:capacita_dev_2024@db:5432/capacita_db
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+    driver: local
