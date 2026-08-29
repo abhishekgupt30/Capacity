@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: 'Libre Caslon Text', Georgia, serif;
+  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
+  
+  --color-surface: #fcf9f8;
+  --color-surface-dim: #dcd9d9;
+  --color-surface-bright: #fcf9f8;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f6f3f2;
+  --color-surface-container: #f0eded;
+  --color-surface-container-high: #eae7e7;
+  --color-surface-container-highest: #e5e2e1;
+  --color-on-surface: #1b1b1c;
+  --color-on-surface-variant: #46464d;
+  --color-outline: #76767e;
+  --color-outline-variant: #c6c6ce;
+  --color-surface-tint: #575d78;
+  
+  --color-midnight: #141a32;
+  --color-cobalt: #497cff;
+  --color-sand: #fcf9f8;
+  --color-error-red: #ba1a1a;
+  --color-success-green: #1b873f;
+  --color-warning-amber: #d97706;
+}
+
+:root {
+  --bg-primary: #fcf9f8;
+  --text-primary: #1b1b1c;
+  --midnight: #141a32;
+  --cobalt: #497cff;
+  --hairline: rgba(20, 26, 50, 0.15);
+}
+
+body {
+  font-family: 'Geist', sans-serif;
+  background-color: #fcf9f8;
+  color: #1b1b1c;
+  overflow-x: hidden;
+}
+
+.font-serif {
+  font-family: 'Libre Caslon Text', Georgia, serif;
+}
+
+.font-sans {
+  font-family: 'Geist', sans-serif;
+}
+
+/* Architectural blueprint hairline borders */
+.architectural-border {
+  border: 1px solid rgba(20, 26, 50, 0.15);
+}
+.architectural-border-t {
+  border-top: 1px solid rgba(20, 26, 50, 0.15);
+}
+.architectural-border-b {
+  border-bottom: 1px solid rgba(20, 26, 50, 0.15);
+}
+.architectural-border-l {
+  border-left: 1px solid rgba(20, 26, 50, 0.15);
+}
+.architectural-border-r {
+  border-right: 1px solid rgba(20, 26, 50, 0.15);
+}
+.hairline-border {
+  border-color: rgba(20, 26, 50, 0.15);
+}
+
+/* Subtle architectural blueprint grid background */
+.grid-bg {
+  background-image: 
+    linear-gradient(rgba(20, 26, 50, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 26, 50, 0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Scallop Pattern Elements */
+.scallop-divider {
+  height: 48px;
+  width: 100%;
+  background-color: transparent;
+  background-image: 
+    radial-gradient(circle at 24px 0, #141a32 24px, transparent 25px),
+    radial-gradient(circle at 72px 0, #497cff 24px, transparent 25px);
+  background-size: 96px 48px;
+  background-position: center top;
+  background-repeat: repeat-x;
+}
+
+.scallop-divider-bottom {
+  height: 48px;
+  width: 100%;
+  background-color: transparent;
+  background-image: 
+    radial-gradient(circle at 24px 48px, #141a32 24px, transparent 25px),
+    radial-gradient(circle at 72px 48px, #497cff 24px, transparent 25px);
+  background-size: 96px 48px;
+  background-position: center bottom;
+  background-repeat: repeat-x;
+}
+
+.card-hover {
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  border-color: #497cff;
+}
+
+/* Pulse animation for live indicators */
+@keyframes pulse-soft {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.95); }
+}
+
+.pulse-dot {
+  animation: pulse-soft 2s infinite ease-in-out;
+}

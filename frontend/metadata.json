@@ -1,0 +1,6 @@
+{
+  "name": "Capacita.ai - Workforce Capacity & Workload Optimization",
+  "description": "An AI-powered workforce capacity, overtime tracking, and workload optimization platform.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
