@@ -86,3 +86,10 @@ CREATE INDEX IF NOT EXISTS idx_tasks_assigned_to     ON tasks(assigned_to);
 CREATE INDEX IF NOT EXISTS idx_tasks_team_id         ON tasks(team_id);
 CREATE INDEX IF NOT EXISTS idx_overtime_user_id      ON overtime_requests(user_id);
 CREATE INDEX IF NOT EXISTS idx_overtime_team_id      ON overtime_requests(team_id);
+
+-- Persistent provider usage guard. The application atomically increments this counter
+-- before a Gemini request, preventing the configured daily limit being exceeded.
+CREATE TABLE IF NOT EXISTS gemini_usage (
+    usage_date DATE PRIMARY KEY,
+    call_count INTEGER NOT NULL DEFAULT 0
+);

@@ -48,10 +48,4 @@ export const authService = {
     localStorage.removeItem('capacita_current_user');
   },
 
-  switchRole(targetRole: 'employee' | 'manager'): User {
-    // For switching roles in demo, we clear token and return null or handle via mock
-    // Since we are matching UI to backend, switchRole can just fetch the target profile if needed,
-    // or we can allow role switching by resetting state.
-    throw new Error("Switch role requires re-authentication.");
-  }
 };

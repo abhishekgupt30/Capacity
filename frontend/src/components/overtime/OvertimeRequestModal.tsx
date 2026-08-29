@@ -52,8 +52,8 @@ export const OvertimeRequestModal: React.FC<OvertimeRequestModalProps> = ({
     >
       <form onSubmit={handleSubmit} className="space-y-4 font-sans text-xs">
         <div className="p-3 bg-[#dce1ff]/30 border border-[#141a32]/10 text-xs text-[#141a32]">
-          <div className="font-bold">Applicant: {user?.name || 'Alex Rivera'}</div>
-          <div className="text-[#46464d]">Current Weekly Bandwidth: {user?.current_hours || 38}h / 40h standard</div>
+          <div className="font-bold">Applicant: {user?.name || 'No authenticated user'}</div>
+          <div className="text-[#46464d]">Current workload: {user?.current_hours ?? 0}h / {user?.weekly_capacity ?? 0}h capacity</div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

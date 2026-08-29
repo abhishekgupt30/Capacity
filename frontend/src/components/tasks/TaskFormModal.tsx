@@ -3,6 +3,7 @@ import { CreateTaskInput, TaskPriority, TaskStatus } from '../../types';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { useTeamCapacity } from '../../hooks/useTeamCapacity';
+import { useAuth } from '../../context/AuthContext';
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -18,12 +19,13 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   initialAssigneeId
 }) => {
   const { members } = useTeamCapacity();
+  const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [estimated_hours, setEstimatedHours] = useState<number>(4);
   const [priority, setPriority] = useState<TaskPriority>('medium');
   const [status, setStatus] = useState<TaskStatus>('todo');
-  const [assignee_id, setAssigneeId] = useState(initialAssigneeId || members[0]?.id || 'usr_marcus_02');
+  const [assignee_id, setAssigneeId] = useState(initialAssigneeId || members[0]?.id || '');
   const [deadline, setDeadline] = useState(new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0]);
   const [tagsInput, setTagsInput] = useState('Platform, Backend');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -34,13 +36,14 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
 
     setIsSubmitting(true);
     try {
-      await onSubmit({
+        await onSubmit({
         title,
         description,
         estimated_hours,
         priority,
         status,
-        assignee_id,
+          assignee_id,
+          team_id: user?.team_id || '',
         deadline,
         tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean)
       });
@@ -181,6 +184,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
             variant="primary"
             size="sm"
             isLoading={isSubmitting}
+            disabled={!assignee_id || members.length === 0}
           >
             Create & Allocate Task
           </Button>

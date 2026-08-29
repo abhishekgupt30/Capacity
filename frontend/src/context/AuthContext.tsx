@@ -6,7 +6,6 @@ interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<void>;
   signup: (data: { name: string; email: string; role: UserRole; team_name?: string }) => Promise<void>;
   logout: () => void;
-  switchRole: (role: UserRole) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,7 +17,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     const savedUser = authService.getCurrentUser();
-    const savedToken = authService.getToken() || 'mock_token_init';
+    const savedToken = authService.getToken();
     if (savedUser) {
       setUser(savedUser);
       setToken(savedToken);
@@ -54,11 +53,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setToken(null);
   };
 
-  const switchRole = (role: UserRole) => {
-    const updated = authService.switchRole(role);
-    setUser(updated);
-  };
-
   return (
     <AuthContext.Provider
       value={{
@@ -69,7 +63,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login,
         signup,
         logout,
-        switchRole
       }}
     >
       {children}

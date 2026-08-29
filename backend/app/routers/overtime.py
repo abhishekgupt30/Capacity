@@ -23,9 +23,13 @@ async def get_overtime_requests(
     db: AsyncSession = Depends(get_db),
     current_user: Profile = Depends(get_current_user),
 ):
+    if team_id and team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Team access denied")
     query = select(OvertimeRequest)
     if team_id:
         query = query.where(OvertimeRequest.team_id == team_id)
+    if current_user.role != UserRole.MANAGER:
+        query = query.where(OvertimeRequest.user_id == current_user.id)
 
     result = await db.execute(query)
     requests = result.scalars().all()
@@ -85,6 +89,8 @@ async def submit_overtime_request(
     db: AsyncSession = Depends(get_db),
     current_user: Profile = Depends(get_current_user),
 ):
+    if current_user.role != UserRole.MANAGER and payload.employee_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You can only submit your own request")
     # Verify employee exists
     user_query = select(Profile).where(Profile.id == payload.employee_id)
     user_result = await db.execute(user_query)
@@ -94,6 +100,8 @@ async def submit_overtime_request(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Employee profile not found",
         )
+    if user.team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Employee team access denied")
 
     # Submit request
     new_req = OvertimeRequest(

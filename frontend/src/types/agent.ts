@@ -48,6 +48,11 @@ export interface RebalancePlan {
     balanced_ratio: string;
   };
   status: 'pending_approval' | 'approved' | 'rejected';
+  agent_log_steps?: Array<{
+    timestamp: string;
+    level: string;
+    message: string;
+  }>;
 }
 
 export interface AgentLogStep {

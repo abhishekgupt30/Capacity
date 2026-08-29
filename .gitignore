@@ -19,15 +19,22 @@ venv/
 **/.env
 **/.env.*
 !**/.env.example
+.envrc
 *.local
 *.secret
 *.secrets
+*.token
+*.auth
+*.credentials
 *.pem
 *.key
 *.crt
+*.p12
+*.pfx
 secrets/
 credentials.json
 service-account*.json
+**/.npmrc
 
 # IDE and editor files
 .vscode/*
@@ -51,6 +58,9 @@ service-account*.json
 # Docker
 docker-compose.override.yml
 pgdata/
+**/volumes/
+*.sql.gz
+*.dump
 
 # Logs and temporary files
 *.log
@@ -58,6 +68,19 @@ logs/
 tmp/
 temp/
 *.tmp
+*.bak
+*.backup
+*.swp
+
+# Local databases and exports
+*.db
+*.sqlite
+*.sqlite3
+*.mdb
+*.csv
+*.xlsx
+exports/
+uploads/
 
 # OS
 .DS_Store
@@ -72,3 +95,6 @@ htmlcov/
 .vercel/
 .netlify/
 .firebase/
+.terraform/
+.serverless/
+.history/

@@ -22,6 +22,8 @@ class Settings(BaseSettings):
 
     # ── Google Gemini (server-side only) ──────────────────────
     GOOGLE_API_KEY: str = ""
+    GEMINI_ENABLED: bool = False
+    GEMINI_DAILY_CALL_LIMIT: int = 0
 
     # ── App ───────────────────────────────────────────────────
     APP_ENV: str = "development"
@@ -52,6 +54,8 @@ class Settings(BaseSettings):
                 "GOOGLE_API_KEY is not set. Agent endpoints will be unavailable.",
                 stacklevel=2,
             )
+        if self.GEMINI_DAILY_CALL_LIMIT < 0:
+            raise ValueError("GEMINI_DAILY_CALL_LIMIT cannot be negative")
 
 
 settings = Settings()

@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models.profile import Profile
+from app.models.profile import Profile, UserRole
 from app.models.task import Task, TaskStatus
 from app.schemas.task import TaskCreate, TaskRead, TaskUpdate
 
@@ -21,6 +21,10 @@ async def get_tasks(
     db: AsyncSession = Depends(get_db),
     current_user: Profile = Depends(get_current_user),
 ):
+    if team_id and team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Team access denied")
+    if assignee_id and assignee_id != current_user.id and current_user.role != UserRole.MANAGER:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Assignee access denied")
     query = select(Task)
     if assignee_id:
         query = query.where(Task.assigned_to == assignee_id)
@@ -57,6 +61,10 @@ async def create_task(
     db: AsyncSession = Depends(get_db),
     current_user: Profile = Depends(get_current_user),
 ):
+    if payload.team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Team access denied")
+    if current_user.role != UserRole.MANAGER and payload.assignee_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only managers can assign another member")
     # Verify assignee exists
     assignee_query = select(Profile).where(Profile.id == payload.assignee_id)
     assignee_result = await db.execute(assignee_query)
@@ -66,6 +74,8 @@ async def create_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Assignee not found",
         )
+    if assignee.team_id != payload.team_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Assignee must belong to the selected team")
 
     # Autogenerate project key if not provided
     project_key = payload.project_key or f"CAP-{hash(payload.title) % 900 + 100}"
@@ -79,7 +89,7 @@ async def create_task(
         priority=payload.priority,
         assigned_to=payload.assignee_id,
         team_id=payload.team_id,
-        status=TaskStatus.TODO,
+        status=payload.status,
         project_key=project_key,
         tags=payload.tags,
     )
@@ -108,6 +118,8 @@ async def update_task_status(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
+    if current_user.role != UserRole.MANAGER and task.assigned_to != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Task access denied")
 
     if payload.status is not None:
         task.status = payload.status
@@ -154,6 +166,8 @@ async def reassign_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
+    if current_user.role != UserRole.MANAGER and task.assigned_to != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Task access denied")
 
     # Verify new assignee exists
     assignee_query = select(Profile).where(Profile.id == payload.assignee_id)
@@ -164,6 +178,10 @@ async def reassign_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="New assignee not found",
         )
+    if new_assignee.team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Assignee team access denied")
+    if current_user.role != UserRole.MANAGER:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only managers can reassign tasks")
 
     task.assigned_to = payload.assignee_id
     await db.flush()
@@ -189,6 +207,8 @@ async def delete_task(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Task not found",
         )
+    if current_user.role != UserRole.MANAGER and task.assigned_to != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Task access denied")
 
     await db.delete(task)
     return {"success": True}

@@ -19,8 +19,8 @@ import {
 import { cn } from '../../utils/cn';
 
 export const Navbar: React.FC = () => {
-  const { user, isAuthenticated, switchRole, logout } = useAuth();
-  const { resetToInitialDemoState } = useCapacity();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { refreshData } = useCapacity();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -50,18 +50,8 @@ export const Navbar: React.FC = () => {
     { name: 'Insights', path: '/#insights' }
   ];
 
-  const handleRoleToggle = (targetRole: 'manager' | 'employee') => {
-    switchRole(targetRole);
-    setRoleMenuOpen(false);
-    if (targetRole === 'manager') {
-      navigate('/manager');
-    } else {
-      navigate('/employee');
-    }
-  };
-
-  const handleResetDemo = () => {
-    resetToInitialDemoState();
+  const handleRefresh = () => {
+    void refreshData();
     setRoleMenuOpen(false);
   };
 
@@ -80,7 +70,7 @@ export const Navbar: React.FC = () => {
             </span>
           </Link>
 
-          {/* Role badge switcher in header for instant demo navigation */}
+          {/* Authenticated role indicator */}
           {isAuthenticated && (
             <div className="relative hidden md:block">
               <button
@@ -88,42 +78,42 @@ export const Navbar: React.FC = () => {
                 className="flex items-center gap-2 border border-[#141a32]/20 px-3 py-1 bg-[#ffffff] hover:bg-[#f6f3f2] transition-colors text-xs font-sans uppercase tracking-wider font-semibold text-[#141a32]"
               >
                 <span className="w-2 h-2 rounded-full bg-[#497cff]" />
-                <span>Role: {user?.role === 'manager' ? 'Manager (Sarah)' : 'Employee (Alex)'}</span>
+                <span>Role: {user?.role}</span>
                 <ChevronDown className="w-3.5 h-3.5 text-[#76767e]" />
               </button>
 
               {roleMenuOpen && (
                 <div className="absolute left-0 mt-1 w-64 bg-[#ffffff] architectural-border shadow-xl z-50 p-2 font-sans animate-in fade-in">
                   <div className="text-[10px] uppercase font-bold text-[#76767e] px-2 py-1 tracking-wider border-b border-[#141a32]/10 mb-1">
-                    Demo Role Switcher
+                    Current Role
                   </div>
                   <button
-                    onClick={() => handleRoleToggle('manager')}
+                    onClick={() => { setRoleMenuOpen(false); navigate('/manager'); }}
                     className={cn(
                       'w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#f0eded] transition-colors',
                       isManager ? 'font-bold text-[#141a32] bg-[#f6f3f2]' : 'text-[#46464d]'
                     )}
                   >
-                    <span>Manager Portal (Sarah)</span>
+                    <span>Manager Portal</span>
                     {isManager && <UserCheck className="w-3.5 h-3.5 text-[#497cff]" />}
                   </button>
                   <button
-                    onClick={() => handleRoleToggle('employee')}
+                    onClick={() => { setRoleMenuOpen(false); navigate('/employee'); }}
                     className={cn(
                       'w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#f0eded] transition-colors',
                       isEmployee ? 'font-bold text-[#141a32] bg-[#f6f3f2]' : 'text-[#46464d]'
                     )}
                   >
-                    <span>Employee Portal (Alex)</span>
+                    <span>Employee Portal</span>
                     {isEmployee && <UserCheck className="w-3.5 h-3.5 text-[#497cff]" />}
                   </button>
                   <div className="border-t border-[#141a32]/10 my-1" />
                   <button
-                    onClick={handleResetDemo}
+                    onClick={handleRefresh}
                     className="w-full text-left px-3 py-2 text-xs text-[#46464d] hover:bg-[#ffdad6]/40 hover:text-[#ba1a1a] transition-colors flex items-center gap-2"
                   >
                     <RefreshCw className="w-3 h-3" />
-                    <span>Reset Demo Scenario (Overload)</span>
+                    <span>Refresh Data</span>
                   </button>
                 </div>
               )}
@@ -233,7 +223,7 @@ export const Navbar: React.FC = () => {
                 variant="outline"
                 onClick={() => navigate('/login')}
               >
-                Launch Demo
+                Launch Workspace
               </Button>
             </div>
           )}
@@ -243,7 +233,7 @@ export const Navbar: React.FC = () => {
         <div className="lg:hidden flex items-center gap-3">
           {isAuthenticated && (
             <button
-              onClick={() => handleRoleToggle(isManager ? 'employee' : 'manager')}
+               onClick={() => navigate(isManager ? '/manager' : '/employee')}
               className="text-[11px] font-sans uppercase font-bold border border-[#141a32]/20 px-2.5 py-1 bg-white"
             >
               {isManager ? 'MGR' : 'EMP'}
@@ -271,14 +261,14 @@ export const Navbar: React.FC = () => {
                   <Button
                     size="sm"
                     variant={isManager ? 'primary' : 'outline'}
-                    onClick={() => { handleRoleToggle('manager'); setMobileMenuOpen(false); }}
+                   onClick={() => { navigate('/manager'); setMobileMenuOpen(false); }}
                   >
                     Manager View
                   </Button>
                   <Button
                     size="sm"
                     variant={isEmployee ? 'primary' : 'outline'}
-                    onClick={() => { handleRoleToggle('employee'); setMobileMenuOpen(false); }}
+                   onClick={() => { navigate('/employee'); setMobileMenuOpen(false); }}
                   >
                     Employee View
                   </Button>
@@ -300,9 +290,9 @@ export const Navbar: React.FC = () => {
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => { handleResetDemo(); setMobileMenuOpen(false); }}
+                   onClick={() => { handleRefresh(); setMobileMenuOpen(false); }}
                 >
-                  Reset Demo Scenario
+                   Refresh Data
                 </Button>
                 <button
                   onClick={() => { logout(); setMobileMenuOpen(false); }}
@@ -318,7 +308,7 @@ export const Navbar: React.FC = () => {
               <Link to="/#architecture" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-[#141a32]/10">Architecture</Link>
               <Link to="/#insights" onClick={() => setMobileMenuOpen(false)} className="py-2 border-b border-[#141a32]/10">Insights</Link>
               <div className="pt-4 flex flex-col gap-2">
-                <Button onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}>Sign In / Launch Demo</Button>
+                 <Button onClick={() => { navigate('/login'); setMobileMenuOpen(false); }}>Sign In</Button>
               </div>
             </>
           )}

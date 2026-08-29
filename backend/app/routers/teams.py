@@ -1,6 +1,5 @@
 """Teams router for managing organizational structures."""
 
-import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -22,7 +21,7 @@ async def get_teams(
     db: AsyncSession = Depends(get_db),
     current_user: Profile = Depends(get_current_user),
 ):
-    query = select(Team)
+    query = select(Team).where(Team.id == current_user.team_id)
     result = await db.execute(query)
     teams = result.scalars().all()
 
@@ -47,6 +46,8 @@ async def get_team_members(
     db: AsyncSession = Depends(get_db),
     current_user: Profile = Depends(get_current_user),
 ):
+    if team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Team access denied")
     # Verify team exists
     team_query = select(Team).where(Team.id == team_id)
     team_result = await db.execute(team_query)
@@ -111,10 +112,13 @@ async def get_team_members(
             allocated_hours=allocated_hours,
             completed_hours=completed_hours,
             overtime_hours=overtime_hours,
-            efficiency_index=94.0 if allocated_hours <= total_allowed else 78.0,
+            efficiency_index=round(
+                (sum(t.completed_hours for t in tasks) / sum(t.estimated_hours for t in tasks)) * 100,
+                1,
+            ) if tasks and sum(t.estimated_hours for t in tasks) > 0 else 0.0,
             blockers_count=blockers,
             status=capacity_status,
-            skills=["Backend", "API"] if profile.title and "software" in profile.title.lower() else ["Design", "UI"],
+            skills=[],
             active_task_count=sum(1 for t in tasks if t.status != TaskStatus.COMPLETED)
         )
         members.append(member_read)
@@ -128,9 +132,14 @@ async def get_team_metrics(
     db: AsyncSession = Depends(get_db),
     current_user: Profile = Depends(get_current_user),
 ):
+    if team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Team access denied")
     team_query = select(Team).where(Team.id == team_id)
     team_result = await db.execute(team_query)
     team = team_result.scalar_one_or_none()
+
+    if not team:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
 
     members = await get_team_members(team_id=team_id, db=db, current_user=current_user)
 
@@ -150,18 +159,30 @@ async def get_team_metrics(
     else:
         team_status = "underutilized"
 
+    task_query = select(Task).where(Task.team_id == team_id)
+    task_result = await db.execute(task_query)
+    tasks = task_result.scalars().all()
+    cycle_times = [
+        max(0, (task.deadline - task.created_at.date()).days)
+        for task in tasks
+    ]
+    critical_dependencies = sum(
+        1 for task in tasks
+        if task.status != TaskStatus.COMPLETED and task.priority.value == "critical"
+    )
+
     return {
-        "teamId": str(team_id),
-        "teamName": team.name if team else "Team",
-        "department": (team.department if team else "Engineering") or "Engineering",
-        "activeResources": len(members),
-        "efficiencyIndex": sum(m.efficiency_index for m in members) / len(members) if members else 100.0,
-        "totalCapacityHours": total_capacity,
-        "totalAllocatedHours": total_allocated,
-        "utilizationRate": round(utilization_rate, 1),
-        "blockersIdentified": blockers,
-        "avgCycleTimeDays": 3.5,
-        "criticalDependencies": 2,
-        "overloadedMembersCount": overloaded_count,
+        "team_id": str(team_id),
+        "team_name": team.name,
+        "department": team.department or "",
+        "active_resources": len(members),
+        "efficiency_index": round(sum(m.efficiency_index for m in members) / len(members), 1) if members else 0.0,
+        "total_capacity_hours": total_capacity,
+        "total_allocated_hours": total_allocated,
+        "utilization_rate": round(utilization_rate, 1),
+        "blockers_identified": blockers,
+        "avg_cycle_time_days": round(sum(cycle_times) / len(cycle_times), 1) if cycle_times else 0.0,
+        "critical_dependencies": critical_dependencies,
+        "overloaded_members_count": overloaded_count,
         "status": team_status
     }

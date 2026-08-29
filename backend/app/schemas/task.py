@@ -19,6 +19,7 @@ class TaskCreate(TaskBase):
     assignee_id: str
     team_id: str
     project_key: str | None = None
+    status: TaskStatus = TaskStatus.TODO
 
 
 class TaskRead(TaskBase):

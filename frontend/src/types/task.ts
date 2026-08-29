@@ -11,7 +11,7 @@ export interface Task {
   priority: TaskPriority;
   status: TaskStatus;
   assignee_id: string;
-  assignee_name: str | null;
+  assignee_name: string | null;
   assignee_avatar?: string;
   team_id: string;
   project_key?: string;

@@ -3,7 +3,7 @@
 import json
 import uuid
 from datetime import datetime, timezone
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.config import settings
 from app.database import AsyncSessionLocal
@@ -21,6 +21,33 @@ from app.schemas.agent import (
 
 # Active plan cache
 ACTIVE_REBALANCE_PLANS: dict[str, RebalancePlan] = {}
+
+
+async def _reserve_gemini_call() -> bool:
+    """Atomically reserve one persistent daily Gemini call in PostgreSQL."""
+    if not settings.GEMINI_ENABLED or not settings.GOOGLE_API_KEY:
+        return False
+    limit = settings.GEMINI_DAILY_CALL_LIMIT
+    if limit <= 0:
+        return False
+    today = datetime.now(timezone.utc).date()
+    async with AsyncSessionLocal() as db:
+        await db.execute(text("""
+            CREATE TABLE IF NOT EXISTS gemini_usage (
+                usage_date DATE PRIMARY KEY,
+                call_count INTEGER NOT NULL DEFAULT 0
+            )
+        """))
+        result = await db.execute(text("""
+            INSERT INTO gemini_usage (usage_date, call_count)
+            VALUES (:usage_date, 1)
+            ON CONFLICT (usage_date) DO UPDATE
+            SET call_count = gemini_usage.call_count + 1
+            WHERE gemini_usage.call_count < :daily_limit
+            RETURNING call_count
+        """), {"usage_date": today, "daily_limit": limit})
+        await db.commit()
+        return result.first() is not None
 
 
 async def get_team_workloads_data(team_id: str) -> list[dict]:
@@ -81,8 +108,8 @@ async def get_team_workloads_data(team_id: str) -> list[dict]:
         return result
 
 
-async def run_rebalance_fallback(team_id: str) -> RebalancePlan:
-    """A deterministic, high-fidelity mock fallback to balance workloads."""
+async def run_rebalance_algorithm(team_id: str) -> RebalancePlan:
+    """Generate a deterministic recommendation from the current database workloads."""
     workloads = await get_team_workloads_data(team_id)
 
     # Find team details
@@ -169,8 +196,8 @@ async def run_rebalance_fallback(team_id: str) -> RebalancePlan:
                             from_member_name=over["name"],
                             to_member_id=under["member_id"],
                             to_member_name=under["name"],
-                            reason=f"{under['name']} has {limit_under - current_alloc}h spare capacity and matching task profile tags.",
-                            confidence_score=0.95,
+                            reason=f"{under['name']} has {limit_under - current_alloc:.1f}h spare capacity for this task.",
+                            confidence_score=round(min(1.0, max(0.0, (limit_under - current_alloc) / task["estimated_hours"])), 2),
                         )
                     )
 
@@ -218,20 +245,41 @@ async def run_rebalance_fallback(team_id: str) -> RebalancePlan:
     )
 
     plan_id = f"plan_sim_{uuid.uuid4().hex[:6]}"
+    employee_workloads = [m for m in workloads if m["role"] != "manager"]
+    before_overloaded = sum(
+        1 for m in employee_workloads
+        if m["allocated_hours"] > m["weekly_capacity"] + m["overtime_hours"]
+    )
+    after_overloaded = sum(
+        1 for m in employee_workloads
+        if proposed_workloads[m["member_id"]] > m["weekly_capacity"] + m["overtime_hours"]
+    )
+    overload_reduction = (
+        (before_overloaded - after_overloaded) / before_overloaded * 100
+        if before_overloaded else 0.0
+    )
+    shifted_hours = sum(shift.hours for shift in shifts)
+    total_allocated = sum(m["allocated_hours"] for m in employee_workloads)
+    balanced_members = sum(
+        1 for m in employee_workloads
+        if proposed_workloads[m["member_id"]] <= m["weekly_capacity"] + m["overtime_hours"]
+    )
+    balanced_ratio = balanced_members / len(employee_workloads) * 100 if employee_workloads else 0.0
+
     plan = RebalancePlan(
         id=plan_id,
         team_id=team_id,
         team_name=team_name,
         generated_at=datetime.now(timezone.utc).isoformat(),
-        summary="Optimized task distribution across platform engineering pod to mitigate high-priority overload bottlenecks.",
+            summary="Optimized task distribution for the current team based on recorded capacity and active workload.",
         shifts=shifts,
         member_comparisons=comparisons,
         expected_impact=ExpectedImpact(
-            overload_reduction_percent=100.0 if len(shifts) > 0 else 0.0,
-            burnout_risk_reduction_percent=85.0 if len(shifts) > 0 else 0.0,
-            velocity_gain_multiplier=1.25 if len(shifts) > 0 else 1.0,
-            predicted_cycle_time_savings_days=1.5 if len(shifts) > 0 else 0.0,
-            balanced_ratio=f"100% of {team_name} within optimal utilization bands." if len(shifts) > 0 else "All members stable.",
+            overload_reduction_percent=round(overload_reduction, 1),
+            burnout_risk_reduction_percent=round(overload_reduction, 1),
+            velocity_gain_multiplier=round(1 + (shifted_hours / total_allocated), 2) if total_allocated else 1.0,
+            predicted_cycle_time_savings_days=round(shifted_hours / 8, 1),
+            balanced_ratio=f"{balanced_ratio:.1f}% of {team_name} within capacity limits.",
         ),
         status="pending_approval",
         agent_log_steps=log_steps,
@@ -243,10 +291,10 @@ async def run_rebalance_fallback(team_id: str) -> RebalancePlan:
 
 async def run_rebalance_agent(team_id: str) -> RebalancePlan:
     """Main entrypoint to run agent capacity rebalancing.
-    Falls back to run_rebalance_fallback if GOOGLE_API_KEY is not set.
+    Uses the database-backed algorithm when no AI provider is configured.
     """
-    if not settings.GOOGLE_API_KEY:
-        return await run_rebalance_fallback(team_id)
+    if not await _reserve_gemini_call():
+        return await run_rebalance_algorithm(team_id)
 
     # ══════════════════════════════════════════════════════════════
     # Live LangChain Tool-Calling implementation
@@ -254,7 +302,6 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
     try:
         from langchain.tools import tool
         from langchain_google_genai import ChatGoogleGenerativeAI
-        from langchain.agents import create_agent
 
         # Define inline tools to bind the database session
         @tool
@@ -326,18 +373,16 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
         tools = [get_team_workloads, simulate_task_shift]
 
         llm = ChatGoogleGenerativeAI(
-            model="gemini-1.0-flash",
+            model="gemini-3.5-flash-lite",
             google_api_key=settings.GOOGLE_API_KEY,
             temperature=0.0,
+            max_retries=0,
         )
 
         system_prompt = (
-            "You are an expert capacity optimization agent for Capacita.ai.\n"
-            "You analyze workloads and redistribute tasks to prevent burnout.\n"
-            "1. Fetch the team workloads using the get_team_workloads tool.\n"
-            "2. Identify overloaded employees (allocated hours > capacity + approved overtime).\n"
-            "3. Shift tasks using simulate_task_shift tool to unburden overloaded employees without overloading others.\n"
-            "4. Propose a final list of shifts.\n"
+            "You are an expert capacity optimization analyst for Capacita.ai.\n"
+            "Analyze the supplied current database workloads and propose safe task reallocations.\n"
+            "Identify overloaded employees (allocated hours > capacity + approved overtime) and propose shifts only when the target remains within its limit.\n"
             "Always output a structured JSON plan matching this format:\n"
             "{\n"
             "  \"summary\": \"summary text\",\n"
@@ -357,13 +402,15 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
             "Return ONLY the raw JSON format."
         )
 
-        # Create tool-calling agent compiled graph
-        agent = create_agent(llm, tools=tools, system_prompt=system_prompt)
-
-        # Run rebalance agent query
-        inputs = {"messages": [{"role": "user", "content": f"Optimize the workload for team '{team_id}'."}]}
-        agent_res = await agent.ainvoke(inputs)
-        output_text = agent_res["messages"][-1].content
+        # Make exactly one provider call per reserved request. Workloads are fetched
+        # locally from PostgreSQL, so Gemini does not need tool-calling iterations.
+        workloads = await get_team_workloads_data(team_id)
+        llm_res = await llm.ainvoke(
+            f"{system_prompt}\n\nCurrent workload data:\n{json.dumps(workloads, indent=2)}"
+        )
+        output_text = llm_res.content
+        if not isinstance(output_text, str):
+            output_text = json.dumps(output_text)
 
         # Parse LLM response JSON
         # Clean markdown code blocks if any
@@ -373,6 +420,15 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
             output_text = output_text.split("```")[1].split("```")[0].strip()
 
         plan_data = json.loads(output_text.strip())
+        # Some Gemini model versions return the shift array directly instead of
+        # wrapping it in the documented {summary, shifts} object.
+        if isinstance(plan_data, list):
+            plan_data = {
+                "summary": "AI-generated workload rebalancing recommendations",
+                "shifts": plan_data,
+            }
+        if not isinstance(plan_data, dict):
+            raise ValueError("Gemini returned an unsupported rebalancing response format")
 
         # Build RebalancePlan from LLM output by querying database metrics for full validation
         workloads = await get_team_workloads_data(team_id)
@@ -385,8 +441,12 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
         proposed_workloads = {m["member_id"]: m["allocated_hours"] for m in workloads}
 
         for s in plan_data.get("shifts", []):
-            task_id = s["task_id"]
-            to_member_id = s["to_member_id"]
+            if not isinstance(s, dict):
+                continue
+            task_id = s.get("task_id")
+            to_member_id = s.get("to_member_id")
+            if not task_id or not to_member_id:
+                continue
 
             # Query details for completeness
             async with AsyncSessionLocal() as db:
@@ -394,7 +454,7 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
                 t_r = await db.execute(t_q)
                 task = t_r.scalar_one_or_none()
 
-                from_p = next((m for m in workloads if m["member_id"] == task.assigned_to), None)
+                from_p = next((m for m in workloads if task and m["member_id"] == task.assigned_to), None)
                 to_p = next((m for m in workloads if m["member_id"] == to_member_id), None)
 
             if task and from_p and to_p:
@@ -452,6 +512,15 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
             ),
         ]
 
+        employee_workloads = [m for m in workloads if m["role"] != "manager"]
+        before_overloaded = sum(1 for m in employee_workloads if m["allocated_hours"] > m["weekly_capacity"] + m["overtime_hours"])
+        after_overloaded = sum(1 for m in employee_workloads if proposed_workloads[m["member_id"]] > m["weekly_capacity"] + m["overtime_hours"])
+        overload_reduction = ((before_overloaded - after_overloaded) / before_overloaded * 100) if before_overloaded else 0.0
+        shifted_hours = sum(shift.hours for shift in shifts)
+        total_allocated = sum(m["allocated_hours"] for m in employee_workloads)
+        balanced_members = sum(1 for m in employee_workloads if proposed_workloads[m["member_id"]] <= m["weekly_capacity"] + m["overtime_hours"])
+        balanced_ratio = balanced_members / len(employee_workloads) * 100 if employee_workloads else 0.0
+
         plan_id = f"plan_sim_{uuid.uuid4().hex[:6]}"
         plan = RebalancePlan(
             id=plan_id,
@@ -462,11 +531,11 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
             shifts=shifts,
             member_comparisons=comparisons,
             expected_impact=ExpectedImpact(
-                overload_reduction_percent=100.0 if len(shifts) > 0 else 0.0,
-                burnout_risk_reduction_percent=85.0 if len(shifts) > 0 else 0.0,
-                velocity_gain_multiplier=1.35 if len(shifts) > 0 else 1.0,
-                predicted_cycle_time_savings_days=1.8 if len(shifts) > 0 else 0.0,
-                balanced_ratio=f"100% of {team_name} balanced.",
+                overload_reduction_percent=round(overload_reduction, 1),
+                burnout_risk_reduction_percent=round(overload_reduction, 1),
+                velocity_gain_multiplier=round(1 + shifted_hours / total_allocated, 2) if total_allocated else 1.0,
+                predicted_cycle_time_savings_days=round(shifted_hours / 8, 1),
+                balanced_ratio=f"{balanced_ratio:.1f}% of {team_name} within capacity limits.",
             ),
             status="pending_approval",
             agent_log_steps=log_steps,

@@ -28,9 +28,17 @@ export const EmployeeDashboard: React.FC = () => {
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
 
   // Current employee data
-  const currentMember = members.find(m => m.id === user?.id) || members[1]; // default Alex Rivera
-  const myTasks = tasks.filter(t => t.assignee_id === currentMember.id || t.assignee_name.includes('Alex'));
+  const currentMember = members.find(m => m.id === user?.id);
+  const myTasks = currentMember ? tasks.filter(t => t.assignee_id === currentMember.id) : [];
   const pendingReviewCount = myTasks.filter(t => t.status === 'review').length;
+
+  if (!currentMember) {
+    return (
+      <div className="border border-dashed border-[#141a32]/20 p-12 text-center text-[#76767e]">
+        No capacity profile is available for this account yet.
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-10 font-sans">
@@ -39,10 +47,10 @@ export const EmployeeDashboard: React.FC = () => {
         tag="EMPLOYEE CAPACITY TELEMETRY"
         title={
           <span>
-            Welcome back, <span className="text-[#497cff]">{user?.name || 'Alex'}</span>
+            Welcome back, <span className="text-[#497cff]">{user?.name || 'there'}</span>
           </span>
         }
-        description={`Alpha Pod • ${currentMember.title} • Personal Workload & Telemetry`}
+        description={`${user?.team_name || 'Your team'} • ${currentMember.title} • Personal Workload & Telemetry`}
         actions={
           <>
             <Button
@@ -73,7 +81,9 @@ export const EmployeeDashboard: React.FC = () => {
               GLOBAL SYSTEM CAPACITY
             </span>
             <div className="font-serif text-3xl md:text-5xl font-bold text-[#141a32]">
-              78.4%
+              {currentMember.weekly_capacity > 0
+                ? `${Math.round((currentMember.allocated_hours / currentMember.weekly_capacity) * 1000) / 10}%`
+                : '0%'}
             </div>
           </div>
           <div className="mt-2 md:mt-0 text-right">
@@ -112,15 +122,15 @@ export const EmployeeDashboard: React.FC = () => {
 
         <MetricCard
           label="Overtime Delta"
-          value={`+${currentMember.overtime_hours || 4.2}h`}
-          subtext="Within Safe Operational Bounds"
+          value={`+${currentMember.overtime_hours}h`}
+          subtext={currentMember.overtime_hours > 0 ? 'Approved overtime' : 'No approved overtime'}
           icon={<Clock className="w-6 h-6 text-[#497cff]" />}
         />
 
         <MetricCard
           label="Efficiency Index"
           value={`${currentMember.efficiency_index}%`}
-          subtext="Top Quartile Delivery Velocity"
+          subtext="Calculated from completed workload"
           icon={<TrendingUp className="w-6 h-6 text-[#1b873f]" />}
         />
       </section>

@@ -32,6 +32,8 @@ async def get_bottlenecks(
     current_user: Profile = Depends(get_current_user),
 ):
     """Scan team capacity telemetry and report workload bottleneck alerts."""
+    if team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Team access denied")
     workloads = await get_team_workloads_data(team_id)
     bottlenecks = []
 
@@ -74,6 +76,8 @@ async def run_rebalance_simulation(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="team_id is required.",
         )
+    if team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Team access denied")
     plan = await run_rebalance_agent(team_id)
     return plan
 

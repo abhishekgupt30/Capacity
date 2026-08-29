@@ -12,7 +12,7 @@ export const EmployeeOvertimePage: React.FC = () => {
   const { overtimeRequests, submitOvertime } = useCapacity();
   const [showModal, setShowModal] = useState(false);
 
-  const myRequests = overtimeRequests.filter(r => r.employee_id === user?.id || r.employee_name.includes('Alex'));
+  const myRequests = overtimeRequests.filter(r => r.employee_id === user?.id);
 
   return (
     <div className="space-y-8 font-sans">

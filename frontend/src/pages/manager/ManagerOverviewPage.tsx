@@ -7,319 +7,59 @@ import { Button } from '../../components/ui/Button';
 import { BottleneckCard } from '../../components/agent/BottleneckCard';
 import { MemberCapacityCard } from '../../components/capacity/MemberCapacityCard';
 import { TaskFormModal } from '../../components/tasks/TaskFormModal';
-import { 
-  Sparkles, 
-  Users, 
-  Clock, 
-  AlertTriangle, 
-  TrendingUp, 
-  Plus, 
-  Layers, 
-  RotateCcw,
-  CheckCircle2
-} from 'lucide-react';
-import { cn } from '../../utils/cn';
+import { Users, Clock, AlertTriangle, TrendingUp, Plus, RefreshCw } from 'lucide-react';
 
 export const ManagerOverviewPage: React.FC = () => {
   const navigate = useNavigate();
-  const { 
-    members, 
-    tasks, 
-    metrics, 
-    bottlenecks, 
-    createTask, 
-    resetToInitialDemoState,
-    agentStatus 
-  } = useCapacity();
-
+  const { members, tasks, metrics, bottlenecks, createTask, refreshData, isLoading, error } = useCapacity();
   const [showTaskModal, setShowTaskModal] = useState(false);
-  const [selectedMemberId, setSelectedMemberId] = useState<string | undefined>(undefined);
+  const [selectedMemberId, setSelectedMemberId] = useState<string>();
 
-  const hasBottleneck = bottlenecks.length > 0;
-  const isAgentApproved = agentStatus === 'approved';
+  if (isLoading && members.length === 0) {
+    return <div className="p-12 text-center text-[#76767e]">Loading team data...</div>;
+  }
+  if (error && members.length === 0) {
+    return <div className="border border-rose-200 bg-rose-50 p-8 text-center text-rose-700">{error}</div>;
+  }
 
-  return (
-    <div className="space-y-10 font-sans">
-      {/* Header */}
-      <PageHeader
-        tag="OPERATIONS & WORKFORCE COMMAND"
-        title="Manager's Overview"
-        description="Real-time resource allocation, cognitive load telemetry, and autonomous balancing across active engineering pods."
-        actions={
-          <>
-            <Button
-              variant="outline"
-              size="md"
-              onClick={resetToInitialDemoState}
-              leftIcon={<RotateCcw className="w-3.5 h-3.5" />}
-            >
-              Reset Demo
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={() => navigate('/manager/agent')}
-              leftIcon={<Sparkles className="w-4 h-4" />}
-            >
-              AI Rebalancing Hub
-            </Button>
-          </>
-        }
-      />
+  return <div className="space-y-10 font-sans">
+    <PageHeader
+      tag="OPERATIONS & WORKFORCE COMMAND"
+      title="Manager's Overview"
+      description="Real-time resource allocation and capacity analysis for your team."
+      actions={<div className="flex gap-3">
+        <Button variant="outline" size="md" onClick={() => void refreshData()} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>Refresh Data</Button>
+        <Button variant="primary" size="md" onClick={() => navigate('/manager/agent')} leftIcon={<TrendingUp className="w-4 h-4" />}>Capacity Analysis</Button>
+      </div>}
+    />
 
-      {/* Success Notification if plan just executed */}
-      {isAgentApproved && (
-        <div className="p-4 bg-green-50 border border-green-300 text-green-900 flex items-center justify-between animate-in fade-in">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="w-5 h-5 text-green-600 shrink-0" />
-            <div>
-              <span className="font-bold text-sm">Workload Rebalance Active: </span>
-              <span className="text-xs">
-                Marcus Vance workload adjusted from 48h to 38h. 10 hours successfully allocated to Elena Rostova. Alpha Pod velocity restored.
-              </span>
-            </div>
-          </div>
-          <button 
-            onClick={resetToInitialDemoState}
-            className="text-xs font-bold text-green-800 underline hover:text-green-950"
-          >
-            Reset Overload Scenario
-          </button>
-        </div>
-      )}
+    {bottlenecks.length > 0 && <BottleneckCard bottleneck={bottlenecks[0]} onResolveClick={() => navigate('/manager/agent')} />}
 
-      {/* Critical Bottleneck Alert Section (Exact Match to Stitch design) */}
-      {hasBottleneck && (
-        <BottleneckCard
-          bottleneck={bottlenecks[0]}
-          onResolveClick={() => navigate('/manager/agent')}
-        />
-      )}
-
-      {/* Key Metrics Row (4 cards) */}
+    {members.length === 0 ? <div className="border border-dashed border-[#141a32]/20 p-12 text-center text-[#76767e]">No team members or workload data available.</div> : <>
       <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <MetricCard
-          label="Total Resource Pool"
-          value={`${metrics.total_capacity_hours}h`}
-          subtext="4 Active Staff Engineers"
-          icon={<Users className="w-6 h-6 text-[#141a32]" />}
-        />
-
-        <MetricCard
-          label="Active Workload"
-          value={`${metrics.total_allocated_hours}h`}
-          subtext={`${metrics.utilization_rate}% Capacity Utilization`}
-          icon={<Clock className="w-6 h-6 text-[#497cff]" />}
-        />
-
-        <MetricCard
-          label="Overloaded Nodes"
-          value={metrics.overloaded_members_count > 0 ? `${metrics.overloaded_members_count} Node` : '0 Nodes'}
-          subtext={metrics.overloaded_members_count > 0 ? 'Marcus Vance (120% Load)' : 'Optimal Balancing'}
-          variant={metrics.overloaded_members_count > 0 ? 'alert' : 'default'}
-          icon={<AlertTriangle className="w-6 h-6" />}
-        />
-
-        <MetricCard
-          label="Team Efficiency Index"
-          value={`${metrics.efficiency_index}%`}
-          subtext={metrics.efficiency_index >= 85 ? 'High Velocity Delivery' : 'Degraded by PR Drag'}
-          icon={<TrendingUp className="w-6 h-6 text-[#1b873f]" />}
-        />
+        <MetricCard label="Total Capacity" value={`${metrics.total_capacity_hours}h`} subtext={`${metrics.active_resources} Active Members`} icon={<Users className="w-6 h-6 text-[#141a32]" />} />
+        <MetricCard label="Active Workload" value={`${metrics.total_allocated_hours}h`} subtext={`${metrics.utilization_rate}% Capacity Utilization`} icon={<Clock className="w-6 h-6 text-[#497cff]" />} />
+        <MetricCard label="Overloaded Members" value={`${metrics.overloaded_members_count}`} subtext={metrics.overloaded_members_count ? 'Requires capacity review' : 'No overload detected'} variant={metrics.overloaded_members_count ? 'alert' : 'default'} icon={<AlertTriangle className="w-6 h-6" />} />
+        <MetricCard label="Efficiency Index" value={`${metrics.efficiency_index}%`} subtext="Calculated from completed workload" icon={<TrendingUp className="w-6 h-6 text-[#1b873f]" />} />
       </section>
 
-      {/* Resource Pods Section (Alpha, Beta, Gamma) */}
-      <section className="space-y-6">
-        <div className="flex justify-between items-end border-b border-[#141a32]/15 pb-4">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#76767e] block mb-1">
-              ORGANIZATION TOPOLOGY
-            </span>
-            <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#141a32]">
-              Resource Pods
-            </h3>
-          </div>
-          <span className="text-xs text-[#76767e] font-mono">
-            3 Active Pods Monitored
-          </span>
+      <section className="border border-[#141a32]/15 bg-white p-6 shadow-sm">
+        <div className="flex justify-between items-end border-b border-[#141a32]/15 pb-4 mb-6">
+          <div><span className="text-[10px] font-bold uppercase tracking-widest text-[#76767e]">CURRENT TEAM</span><h3 className="font-serif text-2xl md:text-3xl font-bold text-[#141a32]">{metrics.team_name}</h3><p className="text-xs text-[#76767e]">{metrics.department}</p></div>
+          <span className="text-xs text-[#76767e]">{metrics.total_allocated_hours}h / {metrics.total_capacity_hours}h</span>
         </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Alpha Pod (Active Demo Pod) */}
-          <div className={cn(
-            'border p-6 bg-white shadow-sm flex flex-col justify-between card-hover',
-            metrics.overloaded_members_count > 0 ? 'border-[#ba1a1a]/40 ring-1 ring-[#ba1a1a]/20' : 'border-[#141a32]/15'
-          )}>
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h4 className="font-serif text-xl font-bold text-[#141a32]">
-                    Alpha Engineering
-                  </h4>
-                  <p className="text-xs text-[#76767e]">Core Backend & Distributed Systems</p>
-                </div>
-                <span className={cn(
-                  'text-[10px] uppercase font-bold px-2 py-0.5 border',
-                  metrics.overloaded_members_count > 0 ? 'bg-[#ffdad6] text-[#ba1a1a] border-[#ba1a1a]/30' : 'bg-green-50 text-green-800 border-green-200'
-                )}>
-                  {metrics.overloaded_members_count > 0 ? 'Bottleneck' : 'Optimal'}
-                </span>
-              </div>
-
-              <div className="space-y-3 my-4">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#76767e]">Efficiency Index</span>
-                  <span className="font-bold text-[#141a32]">{metrics.efficiency_index}%</span>
-                </div>
-                <div className="h-2 w-full bg-[#f0eded] overflow-hidden">
-                  <div 
-                    className={cn('h-full', metrics.overloaded_members_count > 0 ? 'bg-[#ba1a1a]' : 'bg-[#497cff]')}
-                    style={{ width: `${metrics.utilization_rate}%` }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-[#76767e]">
-                  <span>4 Engineers</span>
-                  <span>{metrics.total_allocated_hours}h / {metrics.total_capacity_hours}h</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-[#141a32]/10 flex justify-between items-center text-xs">
-              <span className={metrics.blockers_identified > 0 ? 'text-[#ba1a1a] font-bold' : 'text-green-700'}>
-                {metrics.blockers_identified > 0 ? `${metrics.blockers_identified} Blockers Detected` : 'Zero Blockers'}
-              </span>
-              <button 
-                onClick={() => navigate('/manager/agent')}
-                className="text-[#497cff] font-bold hover:underline"
-              >
-                Inspect Pod →
-              </button>
-            </div>
-          </div>
-
-          {/* Beta Pod */}
-          <div className="border border-[#141a32]/15 p-6 bg-white shadow-sm flex flex-col justify-between card-hover opacity-90">
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h4 className="font-serif text-xl font-bold text-[#141a32]">
-                    Beta Platform
-                  </h4>
-                  <p className="text-xs text-[#76767e]">UI Architecture & Design Systems</p>
-                </div>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-green-50 text-green-800 border border-green-200">
-                  Balanced
-                </span>
-              </div>
-
-              <div className="space-y-3 my-4">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#76767e]">Efficiency Index</span>
-                  <span className="font-bold text-[#141a32]">88%</span>
-                </div>
-                <div className="h-2 w-full bg-[#f0eded] overflow-hidden">
-                  <div className="h-full bg-[#497cff] w-[82%]"></div>
-                </div>
-                <div className="flex justify-between text-xs text-[#76767e]">
-                  <span>5 Engineers</span>
-                  <span>164h / 200h</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-[#141a32]/10 flex justify-between items-center text-xs">
-              <span className="text-[#1b873f] font-medium">Zero Blockers</span>
-              <span className="text-[#76767e]">Healthy</span>
-            </div>
-          </div>
-
-          {/* Gamma Pod */}
-          <div className="border border-[#141a32]/15 p-6 bg-white shadow-sm flex flex-col justify-between card-hover opacity-90">
-            <div>
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h4 className="font-serif text-xl font-bold text-[#141a32]">
-                    Gamma Data Infra
-                  </h4>
-                  <p className="text-xs text-[#76767e]">ETL Pipelines & ClickHouse</p>
-                </div>
-                <span className="text-[10px] uppercase font-bold px-2 py-0.5 bg-green-50 text-green-800 border border-green-200">
-                  Balanced
-                </span>
-              </div>
-
-              <div className="space-y-3 my-4">
-                <div className="flex justify-between text-xs">
-                  <span className="text-[#76767e]">Efficiency Index</span>
-                  <span className="font-bold text-[#141a32]">94%</span>
-                </div>
-                <div className="h-2 w-full bg-[#f0eded] overflow-hidden">
-                  <div className="h-full bg-[#1b873f] w-[76%]"></div>
-                </div>
-                <div className="flex justify-between text-xs text-[#76767e]">
-                  <span>3 Engineers</span>
-                  <span>91h / 120h</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-4 border-t border-[#141a32]/10 flex justify-between items-center text-xs">
-              <span className="text-[#1b873f] font-medium">Zero Blockers</span>
-              <span className="text-[#76767e]">Healthy</span>
-            </div>
-          </div>
-        </div>
+        <div className="h-2 w-full bg-[#f0eded] overflow-hidden"><div className="h-full bg-[#497cff]" style={{ width: `${Math.min(metrics.utilization_rate, 100)}%` }} /></div>
+        <div className="flex justify-between mt-3 text-xs text-[#76767e]"><span>{metrics.blockers_identified} active blockers</span><span>{metrics.critical_dependencies} critical dependencies</span><span>{metrics.avg_cycle_time_days} average cycle days</span></div>
       </section>
 
-      {/* Active Team Members Roster */}
       <section className="space-y-6">
-        <div className="flex justify-between items-end border-b border-[#141a32]/15 pb-4">
-          <div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#76767e] block mb-1">
-              INDIVIDUAL BANDWIDTH TELEMETRY
-            </span>
-            <h3 className="font-serif text-2xl md:text-3xl font-bold text-[#141a32]">
-              Alpha Engineering Roster
-            </h3>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              setSelectedMemberId(undefined);
-              setShowTaskModal(true);
-            }}
-            leftIcon={<Plus className="w-3.5 h-3.5" />}
-          >
-            Assign New Task
-          </Button>
-        </div>
-
+        <div className="flex justify-between items-end border-b border-[#141a32]/15 pb-4"><div><span className="text-[10px] font-bold uppercase tracking-widest text-[#76767e]">INDIVIDUAL CAPACITY</span><h3 className="font-serif text-2xl md:text-3xl font-bold text-[#141a32]">Team Members</h3></div><Button size="sm" variant="outline" onClick={() => { setSelectedMemberId(undefined); setShowTaskModal(true); }} leftIcon={<Plus className="w-3.5 h-3.5" />}>Assign Task</Button></div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {members.map(member => (
-            <MemberCapacityCard
-              key={member.id}
-              member={member}
-              tasks={tasks}
-              onRebalanceClick={() => navigate('/manager/agent')}
-              onAddTaskClick={(m) => {
-                setSelectedMemberId(m.id);
-                setShowTaskModal(true);
-              }}
-            />
-          ))}
+          {members.map(member => <MemberCapacityCard key={member.id} member={member} tasks={tasks} onRebalanceClick={() => navigate('/manager/agent')} onAddTaskClick={m => { setSelectedMemberId(m.id); setShowTaskModal(true); }} />)}
         </div>
       </section>
+    </>}
 
-      {/* Task Creation Modal */}
-      <TaskFormModal
-        isOpen={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
-        onSubmit={async (input) => {
-          await createTask(input);
-        }}
-        initialAssigneeId={selectedMemberId}
-      />
-    </div>
-  );
+    <TaskFormModal isOpen={showTaskModal} onClose={() => setShowTaskModal(false)} onSubmit={async input => { await createTask(input); setShowTaskModal(false); }} initialAssigneeId={selectedMemberId} />
+  </div>;
 };
