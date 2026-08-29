@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     # ── Google Gemini (server-side only) ──────────────────────
     GOOGLE_API_KEY: str = ""
     GEMINI_ENABLED: bool = False
+    # Zero means unlimited; positive values enable a persistent daily cap.
     GEMINI_DAILY_CALL_LIMIT: int = 0
 
     # ── App ───────────────────────────────────────────────────

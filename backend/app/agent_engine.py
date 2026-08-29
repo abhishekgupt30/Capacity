@@ -28,8 +28,10 @@ async def _reserve_gemini_call() -> bool:
     if not settings.GEMINI_ENABLED or not settings.GOOGLE_API_KEY:
         return False
     limit = settings.GEMINI_DAILY_CALL_LIMIT
+    # A limit of zero means unlimited. Gemini remains enabled as long as the
+    # provider is enabled and a server-side API key is configured.
     if limit <= 0:
-        return False
+        return True
     today = datetime.now(timezone.utc).date()
     async with AsyncSessionLocal() as db:
         await db.execute(text("""
@@ -373,9 +375,10 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
         tools = [get_team_workloads, simulate_task_shift]
 
         llm = ChatGoogleGenerativeAI(
-            model="gemini-3.5-flash-lite",
+            # Use the reasoning-capable Flash model for constrained planning;
+            # Flash-Lite was returning empty plans for valid overloads.
+            model="gemini-3.5-flash",
             google_api_key=settings.GOOGLE_API_KEY,
-            temperature=0.0,
             max_retries=0,
         )
 
@@ -383,6 +386,9 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
             "You are an expert capacity optimization analyst for Capacita.ai.\n"
             "Analyze the supplied current database workloads and propose safe task reallocations.\n"
             "Identify overloaded employees (allocated hours > capacity + approved overtime) and propose shifts only when the target remains within its limit.\n"
+            "Use the exact task_id and member IDs from the supplied database data; never invent or abbreviate IDs.\n"
+            "If an employee is overloaded and a safe reassignment is possible, you MUST return at least one shift.\n"
+            "Do not return an empty shifts array when a valid safe shift exists.\n"
             "Always output a structured JSON plan matching this format:\n"
             "{\n"
             "  \"summary\": \"summary text\",\n"
@@ -405,10 +411,63 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
         # Make exactly one provider call per reserved request. Workloads are fetched
         # locally from PostgreSQL, so Gemini does not need tool-calling iterations.
         workloads = await get_team_workloads_data(team_id)
+        valid_tasks = [
+            task
+            for member in workloads
+            if member["role"] != "manager"
+            for task in member["tasks"]
+        ]
+        valid_targets = [member for member in workloads if member["role"] != "manager"]
+        candidate_context = (
+            "\n\nValid reassignment candidates (copy IDs exactly):\n"
+            + json.dumps(
+                {
+                    "tasks": [
+                        {
+                            "task_id": task["task_id"],
+                            "task_title": task["title"],
+                            "current_assignee_id": next(
+                                member["member_id"]
+                                for member in workloads
+                                if any(
+                                    item["task_id"] == task["task_id"]
+                                    for item in member["tasks"]
+                                )
+                            ),
+                        }
+                        for task in valid_tasks
+                    ],
+                    "target_members": [
+                        {
+                            "member_id": member["member_id"],
+                            "name": member["name"],
+                            "available_hours": member["weekly_capacity"]
+                            + member["overtime_hours"]
+                            - member["allocated_hours"],
+                        }
+                        for member in valid_targets
+                    ],
+                },
+                indent=2,
+            )
+        )
         llm_res = await llm.ainvoke(
             f"{system_prompt}\n\nCurrent workload data:\n{json.dumps(workloads, indent=2)}"
+            f"{candidate_context}"
         )
         output_text = llm_res.content
+        # ChatGoogleGenerativeAI may return multimodal content as a list of
+        # blocks. Extract the text block before attempting JSON parsing.
+        if isinstance(output_text, list):
+            text_blocks = []
+            for block in output_text:
+                if isinstance(block, str):
+                    text_blocks.append(block)
+                elif isinstance(block, dict) and isinstance(block.get("text"), str):
+                    text_blocks.append(block["text"])
+            output_text = "".join(text_blocks)
+        elif isinstance(output_text, dict) and isinstance(output_text.get("text"), str):
+            output_text = output_text["text"]
         if not isinstance(output_text, str):
             output_text = json.dumps(output_text)
 
@@ -445,6 +504,27 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
                 continue
             task_id = s.get("task_id")
             to_member_id = s.get("to_member_id")
+
+            # Gemini occasionally returns the human-readable fields even when
+            # the prompt requests IDs. Resolve those fields against this team's
+            # database data instead of silently discarding the recommendation.
+            if not task_id:
+                task_title = str(s.get("task_title") or s.get("title") or "").strip().lower()
+                matched_task = next(
+                    (task for task in valid_tasks if task["title"].strip().lower() == task_title),
+                    None,
+                )
+                task_id = matched_task["task_id"] if matched_task else None
+            if not to_member_id:
+                target_name = str(
+                    s.get("to_member_name") or s.get("target_member_name")
+                    or s.get("to_member") or ""
+                ).strip().lower()
+                matched_target = next(
+                    (member for member in valid_targets if member["name"].strip().lower() == target_name),
+                    None,
+                )
+                to_member_id = matched_target["member_id"] if matched_target else None
             if not task_id or not to_member_id:
                 continue
 
@@ -472,6 +552,45 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
                 )
                 proposed_workloads[from_p["member_id"]] -= task.estimated_hours
                 proposed_workloads[to_p["member_id"]] += task.estimated_hours
+
+        # Do not present an apparently successful zero-impact plan when Gemini
+        # returned malformed IDs or ignored an obvious safe recommendation.
+        has_overloaded_member = any(
+            m["role"] != "manager"
+            and m["allocated_hours"] > m["weekly_capacity"] + m["overtime_hours"]
+            for m in workloads
+        )
+        overloaded_members = [
+            m for m in workloads
+            if m["role"] != "manager"
+            and m["allocated_hours"] > m["weekly_capacity"] + m["overtime_hours"]
+        ]
+        available_members = [
+            m for m in workloads
+            if m["role"] != "manager"
+            and m["allocated_hours"] < m["weekly_capacity"] + m["overtime_hours"]
+        ]
+        has_safe_reassignment = any(
+            task["estimated_hours"] <= (
+                target["weekly_capacity"]
+                + target["overtime_hours"]
+                - target["allocated_hours"]
+            )
+            for source in overloaded_members
+            for task in source["tasks"]
+            for target in available_members
+        )
+        if has_overloaded_member and has_safe_reassignment and not shifts:
+            # Keep the live provider as the primary planner, but do not turn a
+            # provider refusal/empty JSON response into a blank UI. This
+            # recovery uses current PostgreSQL workloads and the same capacity
+            # constraints, so it is data-driven rather than hardcoded demo data.
+            import logging
+            logging.warning(
+                "Gemini returned no valid shifts; using the database-validated "
+                "capacity recovery plan."
+            )
+            return await run_rebalance_algorithm(team_id)
 
         # Construct comparisons
         comparisons = []
@@ -521,7 +640,7 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
         balanced_members = sum(1 for m in employee_workloads if proposed_workloads[m["member_id"]] <= m["weekly_capacity"] + m["overtime_hours"])
         balanced_ratio = balanced_members / len(employee_workloads) * 100 if employee_workloads else 0.0
 
-        plan_id = f"plan_sim_{uuid.uuid4().hex[:6]}"
+        plan_id = f"plan_ai_{uuid.uuid4().hex[:6]}"
         plan = RebalancePlan(
             id=plan_id,
             team_id=team_id,

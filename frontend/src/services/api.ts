@@ -28,7 +28,14 @@ class ApiClient {
       }
     }
     if (!res.ok) {
-      throw new Error(`API Error: ${res.status} ${res.statusText}`);
+      let detail = '';
+      try {
+        const body = await res.json() as { detail?: string };
+        detail = body.detail ? `: ${body.detail}` : '';
+      } catch {
+        // Keep the HTTP status when the server does not return JSON.
+      }
+      throw new Error(`API Error: ${res.status} ${res.statusText}${detail}`);
     }
     return await res.json();
   }
