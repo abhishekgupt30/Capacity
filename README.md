@@ -13,7 +13,7 @@ Capacita.ai is a workload, overtime, and burnout management platform with team-s
 
 - Docker Desktop with Docker Compose
 - Node.js 18 or newer
-- A Google Gemini API key if AI-assisted analysis is enabled
+- A Google Gemini API key
 
 Python is provided by the backend Docker image and does not need to be installed on the host machine.
 
