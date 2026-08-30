@@ -39,9 +39,9 @@ Copy-Item backend/.env.example backend/.env
 
 Edit `backend/.env` before continuing:
 
-- Set `SECRET_KEY` to a strong random value.
+- Set `SECRET_KEY` to a strong random value using sha256.
 - Set `CORS_ORIGINS=http://localhost:3000` to match the Vite development server.
-- Set `GOOGLE_API_KEY` if Gemini is enabled. The key must remain server-side in `backend/.env`.
+- Set `GOOGLE_API_KEY` The key must remain server-side in `backend/.env`.
 - Set `GEMINI_ENABLED=false` if you want to run without Gemini.
 
 Start PostgreSQL and the backend:
