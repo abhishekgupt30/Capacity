@@ -5,7 +5,7 @@ import { PageHeader } from '../../components/layout/PageHeader';
 import { MemberCapacityCard } from '../../components/capacity/MemberCapacityCard';
 import { TaskFormModal } from '../../components/tasks/TaskFormModal';
 import { Button } from '../../components/ui/Button';
-import { Sparkles, Plus, Filter } from 'lucide-react';
+import { Plus, Filter } from 'lucide-react';
 
 export const ManagerCapacityPage: React.FC = () => {
   const navigate = useNavigate();
@@ -25,16 +25,6 @@ export const ManagerCapacityPage: React.FC = () => {
         tag="WORKFORCE MATRIX"
         title="Team Capacity & Load"
         description="Comprehensive bandwidth allocation, sprint capacity limits, and efficiency telemetry for Alpha Engineering."
-        actions={
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => navigate('/manager/agent')}
-            leftIcon={<Sparkles className="w-4 h-4" />}
-          >
-            Run AI Rebalancing
-          </Button>
-        }
       />
 
       {/* Filter toolbar */}

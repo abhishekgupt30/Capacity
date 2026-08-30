@@ -49,6 +49,10 @@ class Task(Base):
         default=0.0,
         nullable=False,
     )
+    completed_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     deadline: Mapped[date] = mapped_column(
         Date,
         nullable=False,

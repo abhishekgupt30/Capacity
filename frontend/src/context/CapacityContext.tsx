@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import confetti from 'canvas-confetti';
 import {
   AgentLogStep, AgentStatus, BottleneckReport, CreateTaskInput, MemberCapacity,
@@ -55,6 +55,7 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [agentLogs, setAgentLogs] = useState<AgentLogStep[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const autoPreparedTeams = useRef<Set<string>>(new Set());
 
   const refreshData = useCallback(async () => {
     if (!user?.team_id) { setIsLoading(false); return; }
@@ -81,6 +82,27 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [user?.team_id]);
 
   useEffect(() => { void refreshData(); }, [refreshData]);
+
+  // Dual mode: prepare one pending plan automatically when a manager's
+  // telemetry first detects a bottleneck. The plan still requires approval.
+  // Session-level deduplication prevents refreshes/navigation from creating
+  // repeated Gemini runs. Manual Run Analysis remains available after errors
+  // or rejection.
+  useEffect(() => {
+    const teamId = user?.team_id;
+    if (
+      user?.role !== 'manager' ||
+      !teamId ||
+      bottlenecks.length === 0 ||
+      agentStatus !== 'idle' ||
+      autoPreparedTeams.current.has(teamId)
+    ) {
+      return;
+    }
+
+    autoPreparedTeams.current.add(teamId);
+    void runAgentRebalance();
+  }, [user?.role, user?.team_id, bottlenecks.length, agentStatus]);
 
   const runAgentRebalance = async () => {
     if (!user?.team_id) return;
@@ -111,8 +133,19 @@ export const CapacityProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const rejectAgentPlan = async (reason?: string) => {
     if (!rebalancePlan) return;
-    await agentService.rejectPlan(rebalancePlan.id, reason);
-    setAgentStatus('rejected');
+    const safeReason = typeof reason === 'string' ? reason : undefined;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await agentService.rejectPlan(rebalancePlan.id, safeReason);
+      setRebalancePlan(null);
+      setAgentStatus('rejected');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to reject the rebalancing plan.');
+      setAgentStatus('error');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const createTask = async (input: CreateTaskInput) => {

@@ -1,6 +1,7 @@
 """Tasks router for handling task CRUD and reassignments."""
 
 import uuid
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -126,8 +127,10 @@ async def update_task_status(
         # Update completed hours if completed
         if payload.status == TaskStatus.COMPLETED:
             task.completed_hours = task.estimated_hours
+            task.completed_at = datetime.now(timezone.utc)
         else:
             task.completed_hours = 0.0
+            task.completed_at = None
 
     await db.flush()
 
@@ -182,6 +185,7 @@ async def reassign_task(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Assignee team access denied")
     if current_user.role != UserRole.MANAGER:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only managers can reassign tasks")
+
 
     task.assigned_to = payload.assignee_id
     await db.flush()

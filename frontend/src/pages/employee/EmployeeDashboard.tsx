@@ -7,13 +7,11 @@ import { MetricCard } from '../../components/ui/MetricCard';
 import { Button } from '../../components/ui/Button';
 import { Badge } from '../../components/ui/Badge';
 import { TaskCard } from '../../components/tasks/TaskCard';
-import { TaskFormModal } from '../../components/tasks/TaskFormModal';
 import { OvertimeRequestModal } from '../../components/overtime/OvertimeRequestModal';
 import { 
   CheckSquare, 
   Clock, 
   TrendingUp, 
-  Plus, 
   Send, 
   AlertCircle,
   Sparkles,
@@ -23,8 +21,7 @@ import { TaskStatus } from '../../types';
 
 export const EmployeeDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { tasks, members, updateTaskStatus, createTask, submitOvertime } = useCapacity();
-  const [showTaskModal, setShowTaskModal] = useState(false);
+  const { tasks, members, updateTaskStatus, submitOvertime } = useCapacity();
   const [showOvertimeModal, setShowOvertimeModal] = useState(false);
 
   // Current employee data
@@ -60,14 +57,6 @@ export const EmployeeDashboard: React.FC = () => {
               leftIcon={<Clock className="w-4 h-4" />}
             >
               Request Overtime
-            </Button>
-            <Button
-              variant="primary"
-              size="md"
-              onClick={() => setShowTaskModal(true)}
-              leftIcon={<Plus className="w-4 h-4" />}
-            >
-              Add Task
             </Button>
           </>
         }
@@ -154,7 +143,7 @@ export const EmployeeDashboard: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {myTasks.length === 0 ? (
             <div className="col-span-full border border-dashed border-[#141a32]/20 p-12 text-center text-[#76767e]">
-              No active tasks allocated. Click "+ Add Task" to begin.
+              No active tasks allocated. Open My Tasks to add a task.
             </div>
           ) : (
             myTasks.map(task => (
@@ -167,16 +156,6 @@ export const EmployeeDashboard: React.FC = () => {
           )}
         </div>
       </section>
-
-      {/* Modals */}
-      <TaskFormModal
-        isOpen={showTaskModal}
-        onClose={() => setShowTaskModal(false)}
-        onSubmit={async (input) => {
-          await createTask(input);
-        }}
-        initialAssigneeId={currentMember.id}
-      />
 
       <OvertimeRequestModal
         isOpen={showOvertimeModal}

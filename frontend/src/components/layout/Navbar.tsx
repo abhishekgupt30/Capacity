@@ -1,34 +1,41 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCapacity } from '../../context/CapacityContext';
+import { agentService } from '../../services/agentService';
 import { Button } from '../ui/Button';
 import { 
-  Bot, 
-  Layers, 
-  CheckSquare, 
-  Clock, 
   Menu, 
   X, 
-  RefreshCw, 
-  UserCheck, 
   LogOut,
-  Sparkles,
-  ChevronDown
+  Bell,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 export const Navbar: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuth();
-  const { refreshData } = useCapacity();
+  const { bottlenecks } = useCapacity();
   const location = useLocation();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleMenuOpen, setRoleMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [agentOnline, setAgentOnline] = useState(false);
 
   const isManager = user?.role === 'manager';
-  const isEmployee = user?.role === 'employee';
-  const isPublicPage = location.pathname === '/' || location.pathname === '/login' || location.pathname === '/signup';
+  useEffect(() => {
+    if (!isManager) {
+      setAgentOnline(false);
+      return;
+    }
+
+    let active = true;
+    void agentService.getStatus()
+      .then(({ online }) => { if (active) setAgentOnline(online); })
+      .catch(() => { if (active) setAgentOnline(false); });
+
+    return () => { active = false; };
+  }, [isManager]);
 
   const managerLinks = [
     { name: 'Overview', path: '/manager' },
@@ -50,11 +57,6 @@ export const Navbar: React.FC = () => {
     { name: 'Insights', path: '/#insights' }
   ];
 
-  const handleRefresh = () => {
-    void refreshData();
-    setRoleMenuOpen(false);
-  };
-
   return (
     <header className="bg-[#fcf9f8]/95 backdrop-blur-md sticky top-0 z-40 w-full border-b border-[#141a32]/15">
       <div className="w-full max-w-[1440px] mx-auto px-4 md:px-12 py-4 flex items-center justify-between">
@@ -72,51 +74,9 @@ export const Navbar: React.FC = () => {
 
           {/* Authenticated role indicator */}
           {isAuthenticated && (
-            <div className="relative hidden md:block">
-              <button
-                onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-                className="flex items-center gap-2 border border-[#141a32]/20 px-3 py-1 bg-[#ffffff] hover:bg-[#f6f3f2] transition-colors text-xs font-sans uppercase tracking-wider font-semibold text-[#141a32]"
-              >
+            <div className="hidden md:flex items-center gap-2 border border-[#141a32]/20 px-3 py-1 bg-[#ffffff] text-xs font-sans uppercase tracking-wider font-semibold text-[#141a32]">
                 <span className="w-2 h-2 rounded-full bg-[#497cff]" />
                 <span>Role: {user?.role}</span>
-                <ChevronDown className="w-3.5 h-3.5 text-[#76767e]" />
-              </button>
-
-              {roleMenuOpen && (
-                <div className="absolute left-0 mt-1 w-64 bg-[#ffffff] architectural-border shadow-xl z-50 p-2 font-sans animate-in fade-in">
-                  <div className="text-[10px] uppercase font-bold text-[#76767e] px-2 py-1 tracking-wider border-b border-[#141a32]/10 mb-1">
-                    Current Role
-                  </div>
-                  <button
-                    onClick={() => { setRoleMenuOpen(false); navigate('/manager'); }}
-                    className={cn(
-                      'w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#f0eded] transition-colors',
-                      isManager ? 'font-bold text-[#141a32] bg-[#f6f3f2]' : 'text-[#46464d]'
-                    )}
-                  >
-                    <span>Manager Portal</span>
-                    {isManager && <UserCheck className="w-3.5 h-3.5 text-[#497cff]" />}
-                  </button>
-                  <button
-                    onClick={() => { setRoleMenuOpen(false); navigate('/employee'); }}
-                    className={cn(
-                      'w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[#f0eded] transition-colors',
-                      isEmployee ? 'font-bold text-[#141a32] bg-[#f6f3f2]' : 'text-[#46464d]'
-                    )}
-                  >
-                    <span>Employee Portal</span>
-                    {isEmployee && <UserCheck className="w-3.5 h-3.5 text-[#497cff]" />}
-                  </button>
-                  <div className="border-t border-[#141a32]/10 my-1" />
-                  <button
-                    onClick={handleRefresh}
-                    className="w-full text-left px-3 py-2 text-xs text-[#46464d] hover:bg-[#ffdad6]/40 hover:text-[#ba1a1a] transition-colors flex items-center gap-2"
-                  >
-                    <RefreshCw className="w-3 h-3" />
-                    <span>Refresh Data</span>
-                  </button>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -183,23 +143,67 @@ export const Navbar: React.FC = () => {
         <div className="hidden md:flex items-center gap-4">
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
-              {isManager ? (
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={() => navigate('/manager/agent')}
-                  leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+              {isManager && bottlenecks.length > 0 && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setNotificationsOpen(open => !open)}
+                    title={`${bottlenecks.length} active bottleneck${bottlenecks.length === 1 ? '' : 's'}`}
+                    aria-label={`${bottlenecks.length} active bottleneck${bottlenecks.length === 1 ? '' : 's'}`}
+                    aria-expanded={notificationsOpen}
+                    className="relative p-2 text-[#ba1a1a] hover:bg-[#ffdad6]/50 transition-colors"
+                  >
+                    <Bell className="w-4 h-4" />
+                    <span className="absolute -right-1 -top-1 min-w-4 h-4 px-1 rounded-full bg-[#ba1a1a] text-white text-[9px] font-bold leading-4 text-center">
+                      {bottlenecks.length}
+                    </span>
+                  </button>
+
+                  {notificationsOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-[#141a32]/15 shadow-xl z-50 p-3 font-sans">
+                      <div className="flex items-center justify-between border-b border-[#141a32]/10 pb-2 mb-2">
+                        <span className="text-[10px] uppercase tracking-widest font-bold text-[#141a32]">Notifications</span>
+                        <span className="text-[10px] text-[#ba1a1a] font-bold">{bottlenecks.length} ACTIVE</span>
+                      </div>
+                      <div className="space-y-2">
+                        {bottlenecks.map(bottleneck => (
+                          <button
+                            key={bottleneck.id}
+                            type="button"
+                            onClick={() => { setNotificationsOpen(false); navigate('/manager/agent'); }}
+                            className="w-full text-left p-2 bg-[#fff7f6] hover:bg-[#ffdad6]/50 transition-colors"
+                          >
+                            <div className="flex items-start gap-2">
+                              <AlertTriangle className="w-3.5 h-3.5 text-[#ba1a1a] mt-0.5 shrink-0" />
+                              <span>
+                                <span className="block text-xs font-bold text-[#141a32]">{bottleneck.title}</span>
+                                <span className="block text-[10px] text-[#76767e] mt-0.5">{bottleneck.metric_impact}</span>
+                              </span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => { setNotificationsOpen(false); navigate('/manager/agent'); }}
+                        className="w-full mt-3 pt-2 border-t border-[#141a32]/10 text-[10px] uppercase tracking-wider font-bold text-[#497cff] text-left"
+                      >
+                        Review workload alerts →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {isManager && (
+                <Link
+                  to="/manager/agent"
+                  title={agentOnline ? 'AI agent online' : 'AI agent offline'}
+                  className="hidden sm:flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-[#76767e] hover:text-[#141a32]"
                 >
-                  AI Rebalance
-                </Button>
-              ) : (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate('/employee/tasks/new')}
-                >
-                  + Add Task
-                </Button>
+                  <span className={cn('w-1.5 h-1.5 rounded-full', agentOnline ? 'bg-green-500 animate-pulse' : 'bg-[#ba1a1a]')} />
+                  <span>AGENT {agentOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                </Link>
               )}
 
               <button
@@ -257,23 +261,48 @@ export const Navbar: React.FC = () => {
               <div className="p-3 bg-[#ffffff] border border-[#141a32]/10 mb-2">
                 <div className="text-[10px] text-[#76767e]">Signed in as:</div>
                 <div className="font-bold text-[#141a32] lowercase">{user?.email}</div>
-                <div className="mt-2 flex gap-2">
-                  <Button
-                    size="sm"
-                    variant={isManager ? 'primary' : 'outline'}
-                   onClick={() => { navigate('/manager'); setMobileMenuOpen(false); }}
+                <div className="mt-2 text-xs uppercase tracking-wider text-[#141a32]">Role: {user?.role}</div>
+                {isManager && (
+                  <Link
+                    to="/manager/agent"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="mt-3 inline-flex items-center gap-2 text-[10px] font-mono tracking-widest text-[#76767e]"
                   >
-                    Manager View
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={isEmployee ? 'primary' : 'outline'}
-                   onClick={() => { navigate('/employee'); setMobileMenuOpen(false); }}
-                  >
-                    Employee View
-                  </Button>
-                </div>
+                    <span className={cn('w-1.5 h-1.5 rounded-full', agentOnline ? 'bg-green-500 animate-pulse' : 'bg-[#ba1a1a]')} />
+                    <span>AGENT {agentOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                  </Link>
+                )}
               </div>
+
+              {isManager && bottlenecks.length > 0 && (
+                <div className="border border-[#ba1a1a]/30 bg-[#fff7f6] p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 text-[#ba1a1a]">
+                      <Bell className="w-4 h-4" />
+                      <span className="text-[10px] tracking-widest">NOTIFICATIONS</span>
+                    </div>
+                    <span className="rounded-full bg-[#ba1a1a] text-white px-2 py-0.5 text-[10px]">
+                      {bottlenecks.length} ACTIVE
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {bottlenecks.map(bottleneck => (
+                      <button
+                        key={bottleneck.id}
+                        type="button"
+                        onClick={() => { navigate('/manager/agent'); setMobileMenuOpen(false); }}
+                        className="w-full text-left flex items-start gap-2 p-2 bg-white border border-[#ba1a1a]/15"
+                      >
+                        <AlertTriangle className="w-3.5 h-3.5 text-[#ba1a1a] mt-0.5 shrink-0" />
+                        <span>
+                          <span className="block text-xs font-bold text-[#141a32] normal-case tracking-normal">{bottleneck.title}</span>
+                          <span className="block text-[10px] text-[#76767e] normal-case tracking-normal mt-0.5">{bottleneck.metric_impact}</span>
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {(isManager ? managerLinks : employeeLinks).map(link => (
                 <Link
@@ -286,14 +315,7 @@ export const Navbar: React.FC = () => {
                 </Link>
               ))}
 
-              <div className="pt-2 flex justify-between items-center">
-                <Button
-                  size="sm"
-                  variant="outline"
-                   onClick={() => { handleRefresh(); setMobileMenuOpen(false); }}
-                >
-                   Refresh Data
-                </Button>
+              <div className="pt-2 flex justify-end items-center">
                 <button
                   onClick={() => { logout(); setMobileMenuOpen(false); }}
                   className="text-xs text-[#ba1a1a] underline"

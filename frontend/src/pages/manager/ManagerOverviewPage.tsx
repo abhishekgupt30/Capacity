@@ -7,11 +7,11 @@ import { Button } from '../../components/ui/Button';
 import { BottleneckCard } from '../../components/agent/BottleneckCard';
 import { MemberCapacityCard } from '../../components/capacity/MemberCapacityCard';
 import { TaskFormModal } from '../../components/tasks/TaskFormModal';
-import { Users, Clock, AlertTriangle, TrendingUp, Plus, RefreshCw } from 'lucide-react';
+import { Users, Clock, AlertTriangle, TrendingUp, Plus } from 'lucide-react';
 
 export const ManagerOverviewPage: React.FC = () => {
   const navigate = useNavigate();
-  const { members, tasks, metrics, bottlenecks, createTask, refreshData, isLoading, error } = useCapacity();
+  const { members, tasks, metrics, bottlenecks, createTask, isLoading, error } = useCapacity();
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string>();
 
@@ -27,10 +27,6 @@ export const ManagerOverviewPage: React.FC = () => {
       tag="OPERATIONS & WORKFORCE COMMAND"
       title="Manager's Overview"
       description="Real-time resource allocation and capacity analysis for your team."
-      actions={<div className="flex gap-3">
-        <Button variant="outline" size="md" onClick={() => void refreshData()} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>Refresh Data</Button>
-        <Button variant="primary" size="md" onClick={() => navigate('/manager/agent')} leftIcon={<TrendingUp className="w-4 h-4" />}>Capacity Analysis</Button>
-      </div>}
     />
 
     {bottlenecks.length > 0 && <BottleneckCard bottleneck={bottlenecks[0]} onResolveClick={() => navigate('/manager/agent')} />}

@@ -25,6 +25,7 @@ class Settings(BaseSettings):
     GEMINI_ENABLED: bool = False
     # Zero means unlimited; positive values enable a persistent daily cap.
     GEMINI_DAILY_CALL_LIMIT: int = 0
+    AGENT_MAX_ITERATIONS: int = 4
 
     # ── App ───────────────────────────────────────────────────
     APP_ENV: str = "development"
@@ -57,6 +58,8 @@ class Settings(BaseSettings):
             )
         if self.GEMINI_DAILY_CALL_LIMIT < 0:
             raise ValueError("GEMINI_DAILY_CALL_LIMIT cannot be negative")
+        if self.AGENT_MAX_ITERATIONS < 1:
+            raise ValueError("AGENT_MAX_ITERATIONS must be at least 1")
 
 
 settings = Settings()

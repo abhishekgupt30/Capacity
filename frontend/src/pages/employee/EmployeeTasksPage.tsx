@@ -22,13 +22,8 @@ export const EmployeeTasksPage: React.FC = () => {
         title="My Tasks & Assignments"
         description="Interactive sprint Kanban board. Update status or add tickets to track capacity."
         actions={
-          <Button
-            variant="primary"
-            size="md"
-            onClick={() => setShowModal(true)}
-            leftIcon={<Plus className="w-4 h-4" />}
-          >
-            Create Task
+          <Button variant="primary" size="md" onClick={() => setShowModal(true)} leftIcon={<Plus className="w-4 h-4" />}>
+            Add Task
           </Button>
         }
       />
@@ -36,15 +31,12 @@ export const EmployeeTasksPage: React.FC = () => {
       <TaskBoard
         tasks={myTasks}
         onStatusChange={updateTaskStatus}
-        onNewTaskClick={() => setShowModal(true)}
       />
 
       <TaskFormModal
         isOpen={showModal}
         onClose={() => setShowModal(false)}
-        onSubmit={async (input) => {
-          await createTask(input);
-        }}
+        onSubmit={async input => { await createTask(input); setShowModal(false); }}
         initialAssigneeId={user?.id}
       />
     </div>

@@ -2,6 +2,10 @@ import { RebalancePlan, BottleneckReport } from '../types';
 import { api } from './api';
 
 export const agentService = {
+  async getStatus(): Promise<{ online: boolean }> {
+    return await api.get<{ online: boolean }>('/agent/status');
+  },
+
   async getBottlenecks(team_id: string = 'team_alpha_01'): Promise<BottleneckReport[]> {
     return await api.get<BottleneckReport[]>(`/agent/bottlenecks?team_id=${team_id}`);
   },

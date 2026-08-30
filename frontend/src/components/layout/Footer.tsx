@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { ScallopDivider } from '../ui/ScallopDivider';
 
 interface FooterProps {
@@ -7,6 +6,7 @@ interface FooterProps {
 }
 
 export const Footer: React.FC<FooterProps> = ({ showScallop = true }) => {
+  const currentYear = new Date().getFullYear();
   return (
     <footer className="w-full mt-auto relative font-sans">
       {/* Scallop Accent Divider */}
@@ -19,30 +19,12 @@ export const Footer: React.FC<FooterProps> = ({ showScallop = true }) => {
               Capacita.ai
             </div>
 
-            <nav className="flex flex-wrap gap-6 text-xs uppercase tracking-widest font-semibold text-[#46464d]">
-              <a href="#privacy" className="hover:text-[#141a32] hover:underline transition-all">
-                Privacy Policy
-              </a>
-              <a href="#terms" className="hover:text-[#141a32] hover:underline transition-all">
-                Terms of Service
-              </a>
-              <a href="#api" className="hover:text-[#141a32] hover:underline transition-all">
-                API Documentation
-              </a>
-              <a href="#contact" className="hover:text-[#141a32] hover:underline transition-all">
-                Contact
-              </a>
-            </nav>
           </div>
 
           <div className="pt-6 border-t border-[#141a32]/10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs text-[#46464d]">
             <p>
-              © 2024 Capacita.ai. Precision Optimization for the Intelligent Enterprise.
+              © {currentYear} Capacita.ai. Precision Optimization for the Intelligent Enterprise.
             </p>
-            <div className="flex items-center gap-2 font-mono text-[10px] uppercase tracking-widest text-[#76767e]">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-              <span>SYS_STATUS: ONLINE (v3.1)</span>
-            </div>
           </div>
         </div>
       </div>

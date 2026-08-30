@@ -6,15 +6,15 @@ import { AgentExecutionTimeline } from '../../components/agent/AgentExecutionTim
 import { RebalancePlanView } from '../../components/agent/RebalancePlanView';
 import { BottleneckCard } from '../../components/agent/BottleneckCard';
 import { Button } from '../../components/ui/Button';
-import { Sparkles, Bot, RefreshCw, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
+import { Sparkles, Bot, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 
 export const ManagerAgentPage: React.FC = () => {
   const navigate = useNavigate();
-  const { bottlenecks, rebalancePlan, agentStatus, agentLogs, runAgentRebalance, approveAgentPlan, rejectAgentPlan, refreshData, isLoading, error } = useCapacity();
+  const { bottlenecks, rebalancePlan, agentStatus, agentLogs, runAgentRebalance, approveAgentPlan, rejectAgentPlan, isLoading, error } = useCapacity();
   const isRunning = agentStatus === 'analyzing' || agentStatus === 'simulating';
   const isReady = agentStatus === 'ready';
   return <div className="space-y-10 font-sans">
-    <PageHeader tag="WORKLOAD ANALYSIS" title="Capacity Analysis" description="Analyze current team workloads and review database-backed task reallocation recommendations." actions={<div className="flex gap-3"><Button variant="outline" size="md" onClick={() => void refreshData()} leftIcon={<RefreshCw className="w-3.5 h-3.5" />}>Refresh Data</Button>{(agentStatus === 'idle' || agentStatus === 'rejected' || agentStatus === 'error') && <Button variant="primary" size="md" onClick={() => void runAgentRebalance()} leftIcon={<Sparkles className="w-4 h-4" />}>Run Analysis</Button>}</div>} />
+    <PageHeader tag="WORKLOAD ANALYSIS" title="Capacity Analysis" description="Analyze current team workloads and review database-backed task reallocation recommendations." actions={(agentStatus === 'idle' || agentStatus === 'rejected' || agentStatus === 'error') && <Button variant="primary" size="md" onClick={() => void runAgentRebalance()} leftIcon={<Sparkles className="w-4 h-4" />}>Run Analysis</Button>} />
     {error && <div className="border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{error}</div>}
     {isRunning && <div className="architectural-border border-[#497cff]/30 bg-[#f4f6ff] p-8 text-center" role="status" aria-live="polite">
       <Loader2 className="mx-auto mb-3 h-8 w-8 animate-spin text-[#497cff]" />

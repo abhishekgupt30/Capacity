@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Task, TaskStatus } from '../../types';
 import { Badge } from '../ui/Badge';
-import { Clock, AlertTriangle, MoreVertical, CheckCircle2, User, ChevronRight } from 'lucide-react';
+import { Clock, AlertTriangle, MoreVertical, CheckCircle2, User, RotateCcw } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 interface TaskCardProps {
@@ -32,7 +32,8 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <div
       className={cn(
         'border border-[#141a32]/15 bg-[#ffffff] p-4 transition-all duration-150 relative group font-sans card-hover',
-        task.blocker_risk ? 'border-[#ba1a1a]/40 bg-[#ffdad6]/10' : ''
+        task.blocker_risk ? 'border-[#ba1a1a]/40 bg-[#ffdad6]/10' : '',
+        task.status === 'completed' ? 'opacity-60 grayscale bg-[#f0eded]' : ''
       )}
     >
       {/* Top row: Key + Priority + Quick menu */}
@@ -105,6 +106,17 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         <p className="text-xs text-[#46464d] mb-4 line-clamp-2 leading-relaxed">
           {task.description}
         </p>
+      )}
+
+      {task.status === 'completed' && (
+        <button
+          type="button"
+          onClick={() => onStatusChange?.(task.id, 'todo')}
+          className="mb-4 w-full border border-[#141a32]/20 bg-white px-3 py-2 text-[10px] uppercase tracking-wider font-bold text-[#141a32] hover:bg-[#dce1ff] transition-colors flex items-center justify-center gap-1.5"
+        >
+          <RotateCcw className="w-3 h-3" />
+          Redo Task
+        </button>
       )}
 
       {/* Footer: Hours + Assignee */}

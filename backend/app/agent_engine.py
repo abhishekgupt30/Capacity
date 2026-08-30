@@ -164,8 +164,8 @@ async def run_rebalance_algorithm(team_id: str) -> RebalancePlan:
     for over in overloaded:
         limit_over = over["weekly_capacity"] + over["overtime_hours"]
         # Find active tasks of this overloaded engineer
-        # Sort tasks descending by hours to shift large chunks first
-        tasks = sorted(over["tasks"], key=lambda x: x["estimated_hours"], reverse=True)
+        # Prefer the smallest task that safely reduces the overload.
+        tasks = sorted(over["tasks"], key=lambda x: x["estimated_hours"])
 
         for task in tasks:
             if proposed_workloads[over["member_id"]] <= limit_over:
@@ -303,6 +303,7 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
     # ══════════════════════════════════════════════════════════════
     try:
         from langchain.tools import tool
+        from langchain_core.messages import HumanMessage, SystemMessage, ToolMessage
         from langchain_google_genai import ChatGoogleGenerativeAI
 
         # Define inline tools to bind the database session
@@ -335,7 +336,6 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
 
                 if current_user.team_id != target_user.team_id:
                     return json.dumps({"error": "Cannot shift tasks between different teams."})
-
                 c_tasks_query = select(Task.estimated_hours).where(
                     Task.assigned_to == current_user_id, Task.status != TaskStatus.COMPLETED
                 )
@@ -373,14 +373,16 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
                 )
 
         tools = [get_team_workloads, simulate_task_shift]
+        tools_by_name = {agent_tool.name: agent_tool for agent_tool in tools}
 
         llm = ChatGoogleGenerativeAI(
             # Use the reasoning-capable Flash model for constrained planning;
             # Flash-Lite was returning empty plans for valid overloads.
-            model="gemini-3.5-flash",
+            model="gemini-3.5-flash-lite",
             google_api_key=settings.GOOGLE_API_KEY,
             max_retries=0,
         )
+        llm_with_tools = llm.bind_tools(tools)
 
         system_prompt = (
             "You are an expert capacity optimization analyst for Capacita.ai.\n"
@@ -389,6 +391,8 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
             "Use the exact task_id and member IDs from the supplied database data; never invent or abbreviate IDs.\n"
             "If an employee is overloaded and a safe reassignment is possible, you MUST return at least one shift.\n"
             "Do not return an empty shifts array when a valid safe shift exists.\n"
+            "Prefer the shortest active task that safely fits the target member's spare capacity.\n"
+            "Never choose a larger task when a smaller safe task from the same overloaded employee is available.\n"
             "Always output a structured JSON plan matching this format:\n"
             "{\n"
             "  \"summary\": \"summary text\",\n"
@@ -408,54 +412,54 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
             "Return ONLY the raw JSON format."
         )
 
-        # Make exactly one provider call per reserved request. Workloads are fetched
-        # locally from PostgreSQL, so Gemini does not need tool-calling iterations.
-        workloads = await get_team_workloads_data(team_id)
-        valid_tasks = [
-            task
-            for member in workloads
-            if member["role"] != "manager"
-            for task in member["tasks"]
+        messages = [
+            SystemMessage(content=system_prompt),
+            HumanMessage(
+            content=(
+                    f"Analyze team {team_id}. Call get_team_workloads once. "
+                    "Choose the shortest safe candidate and call simulate_task_shift at most once. "
+                    "After that tool result, stop using tools and return only the final JSON plan."
+                )
+            ),
         ]
-        valid_targets = [member for member in workloads if member["role"] != "manager"]
-        candidate_context = (
-            "\n\nValid reassignment candidates (copy IDs exactly):\n"
-            + json.dumps(
-                {
-                    "tasks": [
-                        {
-                            "task_id": task["task_id"],
-                            "task_title": task["title"],
-                            "current_assignee_id": next(
-                                member["member_id"]
-                                for member in workloads
-                                if any(
-                                    item["task_id"] == task["task_id"]
-                                    for item in member["tasks"]
-                                )
-                            ),
-                        }
-                        for task in valid_tasks
-                    ],
-                    "target_members": [
-                        {
-                            "member_id": member["member_id"],
-                            "name": member["name"],
-                            "available_hours": member["weekly_capacity"]
-                            + member["overtime_hours"]
-                            - member["allocated_hours"],
-                        }
-                        for member in valid_targets
-                    ],
-                },
-                indent=2,
+        output_text = None
+        for iteration in range(settings.AGENT_MAX_ITERATIONS):
+            # The first call was reserved before entering this live path.
+            # Reserve every additional model call generated by the tool loop.
+            if iteration > 0 and not await _reserve_gemini_call():
+                raise ValueError("Gemini daily call limit reached during agent execution")
+
+            llm_res = await llm_with_tools.ainvoke(messages)
+            messages.append(llm_res)
+            tool_calls = getattr(llm_res, "tool_calls", None) or []
+            if not tool_calls:
+                output_text = llm_res.content
+                break
+
+            for tool_call in tool_calls:
+                selected_tool = tools_by_name.get(tool_call["name"])
+                if not selected_tool:
+                    raise ValueError(f"Gemini requested unknown tool: {tool_call['name']}")
+                tool_result = await selected_tool.ainvoke(tool_call.get("args", {}))
+                messages.append(
+                    ToolMessage(
+                        content=str(tool_result),
+                        tool_call_id=tool_call["id"],
+                        name=tool_call["name"],
+                    )
+                )
+
+        if output_text is None:
+            # A provider may spend the whole low-cost tool budget inspecting
+            # candidates without emitting its final JSON. Keep the endpoint
+            # usable by returning the same database-validated fallback used
+            # for other provider failures; do not spend another provider call.
+            import logging
+            logging.warning(
+                "Gemini reached the tool-call iteration limit; using the "
+                "database-validated capacity recovery plan."
             )
-        )
-        llm_res = await llm.ainvoke(
-            f"{system_prompt}\n\nCurrent workload data:\n{json.dumps(workloads, indent=2)}"
-            f"{candidate_context}"
-        )
-        output_text = llm_res.content
+            return await run_rebalance_algorithm(team_id)
         # ChatGoogleGenerativeAI may return multimodal content as a list of
         # blocks. Extract the text block before attempting JSON parsing.
         if isinstance(output_text, list):
@@ -478,7 +482,19 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
         elif "```" in output_text:
             output_text = output_text.split("```")[1].split("```")[0].strip()
 
-        plan_data = json.loads(output_text.strip())
+        try:
+            plan_data = json.loads(output_text.strip())
+        except (json.JSONDecodeError, TypeError):
+            # Gemini can return an empty response or explanatory text instead
+            # of the requested JSON. Preserve the live endpoint contract by
+            # using the current database-backed planner rather than exposing
+            # a JSON parsing error to the manager.
+            import logging
+            logging.warning(
+                "Gemini returned an empty or invalid JSON plan; using the "
+                "database-validated capacity recovery plan."
+            )
+            return await run_rebalance_algorithm(team_id)
         # Some Gemini model versions return the shift array directly instead of
         # wrapping it in the documented {summary, shifts} object.
         if isinstance(plan_data, list):
@@ -491,6 +507,48 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
 
         # Build RebalancePlan from LLM output by querying database metrics for full validation
         workloads = await get_team_workloads_data(team_id)
+        valid_tasks = [
+            task
+            for member in workloads
+            if member["role"] != "manager"
+            for task in member["tasks"]
+        ]
+        valid_targets = [member for member in workloads if member["role"] != "manager"]
+        overloaded_members = [
+            member for member in workloads
+            if member["role"] != "manager"
+            and member["allocated_hours"] > member["weekly_capacity"] + member["overtime_hours"]
+        ]
+        available_members = [
+            member for member in workloads
+            if member["role"] != "manager"
+            and member["allocated_hours"] < member["weekly_capacity"] + member["overtime_hours"]
+        ]
+        shortest_safe_task_ids = {
+            task["task_id"]
+            for source in overloaded_members
+            for task in source["tasks"]
+            if any(
+                task["estimated_hours"] <= (
+                    target["weekly_capacity"]
+                    + target["overtime_hours"]
+                    - target["allocated_hours"]
+                )
+                for target in available_members
+            )
+            and task["estimated_hours"] == min(
+                candidate["estimated_hours"]
+                for candidate in source["tasks"]
+                if any(
+                    candidate["estimated_hours"] <= (
+                        target["weekly_capacity"]
+                        + target["overtime_hours"]
+                        - target["allocated_hours"]
+                    )
+                    for target in available_members
+                )
+            )
+        }
         async with AsyncSessionLocal() as db:
             t_query = select(Team.name).where(Team.id == team_id)
             t_res = await db.execute(t_query)
@@ -527,6 +585,10 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
                 to_member_id = matched_target["member_id"] if matched_target else None
             if not task_id or not to_member_id:
                 continue
+            # Enforce the shortest-safe-task policy even if the provider
+            # recommends a larger valid task first.
+            if shortest_safe_task_ids and task_id not in shortest_safe_task_ids:
+                continue
 
             # Query details for completeness
             async with AsyncSessionLocal() as db:
@@ -560,16 +622,6 @@ async def run_rebalance_agent(team_id: str) -> RebalancePlan:
             and m["allocated_hours"] > m["weekly_capacity"] + m["overtime_hours"]
             for m in workloads
         )
-        overloaded_members = [
-            m for m in workloads
-            if m["role"] != "manager"
-            and m["allocated_hours"] > m["weekly_capacity"] + m["overtime_hours"]
-        ]
-        available_members = [
-            m for m in workloads
-            if m["role"] != "manager"
-            and m["allocated_hours"] < m["weekly_capacity"] + m["overtime_hours"]
-        ]
         has_safe_reassignment = any(
             task["estimated_hours"] <= (
                 target["weekly_capacity"]

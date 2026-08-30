@@ -8,6 +8,7 @@ from app.auth import get_current_user
 from app.database import get_db
 from app.models.profile import Profile, UserRole
 from app.models.task import Task
+from app.config import settings
 from app.schemas.agent import (
     BottleneckReport,
     RebalancePlan,
@@ -20,6 +21,16 @@ from app.agent_engine import (
 )
 
 router = APIRouter(prefix="/agent", tags=["agent"])
+
+
+@router.get("/status")
+async def get_agent_status(
+    current_user: Profile = Depends(get_current_user),
+):
+    """Expose agent availability without exposing or using the provider key."""
+    if current_user.role != UserRole.MANAGER:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Manager access required")
+    return {"online": bool(settings.GOOGLE_API_KEY.strip())}
 
 
 
@@ -126,6 +137,16 @@ async def reject_plan(
     current_user: Profile = Depends(get_current_user),
 ):
     """Discard simulated workload rebalancing plan configuration."""
+    plan = ACTIVE_REBALANCE_PLANS.get(plan_id)
+    if not plan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Plan not found or already rejected.",
+        )
+    if plan.team_id != current_user.team_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Team access denied")
+
+    plan.status = "rejected"
     ACTIVE_REBALANCE_PLANS.pop(plan_id, None)
     return {"success": True, "message": "Rebalancing plan successfully rejected."}
 

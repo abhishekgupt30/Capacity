@@ -144,7 +144,7 @@ def _profiles() -> list[Profile]:
 
 
 def _tasks() -> list[Task]:
-    return [
+    tasks = [
         # Alex Rivera Tasks
         Task(
             id=TASK_IDS[0], # task_01
@@ -318,6 +318,7 @@ def _tasks() -> list[Task]:
             tags=["A11y", "Audit"]
         ),
     ]
+    return tasks
 
 
 def _overtime_requests() -> list[OvertimeRequest]:

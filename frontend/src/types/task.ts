@@ -18,6 +18,7 @@ export interface Task {
   tags: string[];
   blocker_risk?: boolean;
   created_at: string;
+  completed_at?: string | null;
 }
 
 export interface CreateTaskInput {

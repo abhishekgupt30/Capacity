@@ -1,5 +1,5 @@
 import React from 'react';
-import { Database, Cpu, ArrowRight, Bell, GitBranch, MessageSquare, Terminal } from 'lucide-react';
+import { Database, Cpu, Terminal } from 'lucide-react';
 
 export const PlatformArchitecture: React.FC = () => {
   return (
@@ -13,7 +13,7 @@ export const PlatformArchitecture: React.FC = () => {
             Platform Architecture
           </h2>
           <p className="text-base text-[#46464d] max-w-2xl mt-3 leading-relaxed">
-            Continuous telemetry processed through our proprietary neural engine, delivering actionable operational clarity.
+            A role-aware operations workspace that turns persisted team, task, and capacity records into reviewable workload decisions.
           </p>
         </div>
 
@@ -35,14 +35,14 @@ export const PlatformArchitecture: React.FC = () => {
                   01. Data Ingestion
                 </h4>
                 <p className="text-xs text-[#46464d] leading-relaxed mb-6">
-                  Continuous integration from enterprise toolchain via secure webhook streams. Aggregates Jira sprint velocity, GitHub PR queue depth, and Slack async context.
+                  Authenticated managers and employees work with team profiles, task assignments, deadlines, statuses, capacity limits, and approved overtime stored in PostgreSQL.
                 </p>
               </div>
 
               <div className="w-full flex justify-between px-4 border-t border-[#141a32]/10 pt-4 text-[10px] font-mono text-[#76767e]">
-                <span>JIRA</span>
-                <span>GITHUB</span>
-                <span>SLACK</span>
+                <span>AUTH</span>
+                <span>REST API</span>
+                <span>POSTGRES</span>
               </div>
             </div>
 
@@ -57,10 +57,10 @@ export const PlatformArchitecture: React.FC = () => {
                   <div className="absolute inset-0 border border-[#bfc5e4]/30 animate-spin" style={{ animationDuration: '10s' }}></div>
                 </div>
                 <h4 className="font-sans text-xs uppercase tracking-widest font-bold mb-3 text-[#bfc5e4]">
-                  02. Autonomous AI Engine
+                  02. Capacity Analysis Engine
                 </h4>
                 <p className="text-xs text-[#bfc5e4] leading-relaxed mb-6">
-                  Deep neural networks evaluate cognitive load indices, predict burnout probability, and run constraint-satisfaction simulations to generate minimal-disruption rebalance plans.
+                  The FastAPI backend evaluates current workload against capacity and approved overtime. When enabled, Gemini can propose and validate reassignments; otherwise the database-backed deterministic planner keeps the workflow functional.
                 </p>
               </div>
 
@@ -82,13 +82,13 @@ export const PlatformArchitecture: React.FC = () => {
                   03. Actionable Output
                 </h4>
                 <p className="text-xs text-[#46464d] leading-relaxed mb-6">
-                  Prescriptive reallocation blueprints, bottleneck pre-emption alerts, and manager-approved 1-click execution workflows for immediate sprint recovery.
+                  Managers receive bottleneck alerts, workload comparisons, and a proposed plan. No assignment changes are committed until the manager approves the plan.
                 </p>
               </div>
 
               <div className="w-full flex justify-between px-4 border-t border-[#141a32]/10 pt-4 text-[10px] font-mono text-[#76767e]">
                 <span>ALERTS</span>
-                <span>SIMULATIONS</span>
+                <span>PLAN</span>
                 <span>APPROVAL</span>
               </div>
             </div>

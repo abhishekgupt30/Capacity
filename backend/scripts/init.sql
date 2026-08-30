@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     description      TEXT,
     estimated_hours  DOUBLE PRECISION NOT NULL,
     completed_hours  DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    completed_at     TIMESTAMPTZ,
     deadline         DATE           NOT NULL,
     priority         task_priority  NOT NULL DEFAULT 'medium',
     assigned_to      VARCHAR(50)    NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,

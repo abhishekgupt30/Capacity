@@ -1,14 +1,12 @@
 import React, { useState } from 'react';
 import { Task, TaskStatus } from '../../types';
 import { TaskCard } from './TaskCard';
-import { Button } from '../ui/Button';
-import { Search, Filter, Plus, AlertTriangle } from 'lucide-react';
+import { Search, AlertTriangle } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 interface TaskBoardProps {
   tasks: Task[];
   onStatusChange: (task_id: string, status: TaskStatus) => void;
-  onNewTaskClick?: () => void;
 }
 
 const COLUMNS: { id: TaskStatus; title: string; color: string }[] = [
@@ -20,17 +18,22 @@ const COLUMNS: { id: TaskStatus; title: string; color: string }[] = [
 
 export const TaskBoard: React.FC<TaskBoardProps> = ({
   tasks,
-  onStatusChange,
-  onNewTaskClick
+  onStatusChange
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterAssignee, setFilterAssignee] = useState<string>('all');
   const [filterBlockerOnly, setFilterBlockerOnly] = useState(false);
+  const oneDayMs = 24 * 60 * 60 * 1000;
 
   // Unique assignees for filter
   const assignees = Array.from(new Set(tasks.map(t => t.assignee_name)));
 
-  const filteredTasks = tasks.filter(task => {
+  const visibleTasks = tasks.filter(task => {
+    if (task.status !== 'completed' || !task.completed_at) return true;
+    return Date.now() - new Date(task.completed_at).getTime() <= oneDayMs;
+  });
+
+  const filteredTasks = visibleTasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           task.project_key.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesAssignee = filterAssignee === 'all' || task.assignee_name === filterAssignee;
@@ -82,16 +85,6 @@ export const TaskBoard: React.FC<TaskBoardProps> = ({
           </button>
         </div>
 
-        {onNewTaskClick && (
-          <Button
-            size="sm"
-            variant="primary"
-            onClick={onNewTaskClick}
-            leftIcon={<Plus className="w-3.5 h-3.5" />}
-          >
-            New Task
-          </Button>
-        )}
       </div>
 
       {/* Kanban 4 Columns Grid */}

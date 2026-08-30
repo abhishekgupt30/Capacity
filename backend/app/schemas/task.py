@@ -28,6 +28,7 @@ class TaskRead(TaskBase):
     id: str
     status: TaskStatus
     created_at: datetime
+    completed_at: datetime | None = None
     completed_hours: float
     team_id: str
     project_key: str | None = None

@@ -45,7 +45,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
           assignee_id,
           team_id: user?.team_id || '',
         deadline,
-        tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean)
+        tags: tagsInput.split(',').map(t => t.trim()).filter(Boolean),
       });
       // reset form
       setTitle('');
